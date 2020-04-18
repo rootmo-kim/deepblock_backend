@@ -1,0 +1,147 @@
+{
+    "project_info": {
+        "project_name": "CNN_for_MNIST",
+        "total_model": 1,
+        "model_link_info": {
+            "total_model_link": 0
+        }
+    },
+    "data": {
+        "type": "img",
+        "info" : {
+            "format" : "jpg",
+            "shape": [
+                28,
+                28,
+                1
+            ]
+        },
+        "csv": {
+            "label_column": 0,
+            "total_column": 784,
+            "total_row": 60000
+        }
+    },
+    "models": [
+        {
+            "ID": 0,
+            "total_layer": 6,
+            "layers": [
+                {
+                    "type": "conv2d",
+                    "ID": 0,
+                    "pos_x": "100",
+                    "pos_y": "200",
+                    "params": {
+                        "inputShape": [
+                            28,
+                            28,
+                            3
+                        ],
+                        "kernelSize": 5,
+                        "filters": 8,
+                        "strides": 1,
+                        "activation": "relu",
+                        "kernelInitializer": "varianceScaling"
+                    }
+                },
+                {
+                    "type": "maxPooling2d",
+                    "ID": 1,
+                    "pos_x": "200",
+                    "pos_y": "200",
+                    "params": {
+                        "poolSize": [
+                            2,
+                            2
+                        ],
+                        "strides": [
+                            2,
+                            2
+                        ]
+                    }
+                },
+                {
+                    "type": "conv2d",
+                    "ID": 2,
+                    "pos_x": "300",
+                    "pos_y": "200",
+                    "params": {
+                        "kernelSize": 5,
+                        "filters": 16,
+                        "strides": 1,
+                        "activation": "relu",
+                        "kernelInitializer": "varianceScaling"
+                    }
+                },
+                {
+                    "type": "maxPooling2d",
+                    "ID": 3,
+                    "pos_x": "400",
+                    "pos_y": "200",
+                    "params": {
+                        "poolSize": [
+                            2,
+                            2
+                        ],
+                        "strides": [
+                            2,
+                            2
+                        ]
+                    }
+                },
+                {
+                    "type": "flatten",
+                    "ID": 4,
+                    "pos_x": "500",
+                    "pos_y": "200",
+                    "params": {}
+                },
+                {
+                    "type": "dense",
+                    "ID": 5,
+                    "pos_x": "600",
+                    "pos_y": "200",
+                    "params": {
+                        "units": 10,
+                        "kernelInitializer": "varianceScaling",
+                        "activation": "softmax"
+                    }
+                }
+            ],
+            "compile": {
+                "loss": "categoricalCrossentropy",
+                "optimizer": "adam"
+            },
+            "fit": {
+                "batch_size": 512,
+                "epochs": 10,
+                "val_data_per": 0.2
+            },
+            "link_info": {
+                "total_link": 5,
+                "link_0": {
+                    "src_layer_ID": 0,
+                    "dst_layer_ID": 1
+                },
+                "link_1": {
+                    "src_layer_ID": 1,
+                    "dst_layer_ID": 2
+                },
+                "link_2": {
+                    "src_layer_ID": 2,
+                    "dst_layer_ID": 3
+                },
+                "link_3": {
+                    "src_layer_ID": 3,
+                    "dst_layer_ID": 4
+                },
+                "link_4": {
+                    "src_layer_ID": 4,
+                    "dst_layer_ID": 5
+                }
+            }
+        }
+    ]
+
+}
