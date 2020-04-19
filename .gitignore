@@ -108,3 +108,5 @@ dist
 *.jpg
 *.png
 *.jpeg
+
+.vscode
