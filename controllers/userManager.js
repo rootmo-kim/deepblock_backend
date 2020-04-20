@@ -12,12 +12,4 @@ module.exports = {
     logout(req, res){
         //로그아웃
     },
-
-    createProject(req, res){
-        //유저가 새로운 프로젝트를 생성함
-    },
-
-    deleteProject(req, res){
-        
-    }
 };
