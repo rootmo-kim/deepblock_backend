@@ -1,6 +1,6 @@
 let fs      = require('fs');
 let tf      = require("@tensorflow/tfjs-node");
-let datas   = require("../models/data");
+let datas   = require("./data");
 let proj    = require("../public/json/model_info.json");
 
 
@@ -18,53 +18,57 @@ module.exports = {
 
 
         //const modelSavePath = `/DB/${req.body.user_name}/${req.body.proj_name}/result`;
+        let history;
+        let model;
 
-        //모델의 input img size와 data의 img사이즈가 다르면 오류처리해야함
         if(proj.data.type == "img"){
-            if(proj.data.shape != proj.models[0].layers[0].params.inputShape){
-                // res.status(500).json({
-                //     message: "Data size and model input size are mismatch"
-                // });
-                console.log("Data size and model input size are mismatch");
+            //train image load
+            let path = "../public/mnist/trainingSet/trainingSet"; // 실제론 db에서 질의
+            let img_format = proj.data.info.format; // 강제로 png사용하게 변환
+            let img_shape = proj.data.info.shape;
+
+            let imgPath = await datas.dataInit(path, img_format, img_shape);
+            const xs = await tf.data.generator(datas.imageGenerator);
+            const ys = await tf.data.generator(datas.labelGenerator);
+            const ds = await tf.data.zip({xs,ys}).shuffle(imgPath.length).batch(64);
+
+            //model compile
+            model = await getModelFromJson();
+
+            if(model==false){
+                console.log(`model compile failed`);
+                return false;
             }
+
+            //model train param
+            let epoch = proj.models[0].fit.epochs;
+            let batchs = proj.models[0].fit.batch_size;
+            let val_per = proj.models[0].fit.val_data_per;
+            history = await model.fitDataset(ds, {
+                epochs:3,
+                callbacks : {
+                    //onEpochEnd = epoch 종료시 프린트
+                    //onBatchEnd = batch 종료시 프린트
+                    onEpochEnd: async (batch, logs) => {
+                    console.log(batch + ' : ' + logs.acc);
+                }}
+            });
         }else if(proj.data.type == "csv"){
             //csv 는 아직 감이 잘 안잡힘.
+        }else{
+            console.log(`지원하지 않는 데이터 타입`);
+            return false;
         }
 
-        //train image load
-        let path = "../public/trainingSet/trainingSet";
-        let img_format = proj.data.info.format;
-        let img_shape = proj.data.info.shape;
-        let imgPath = await datas.dataInit(path, img_format, img_shape);
-        const xs = await tf.data.generator(datas.imageGenerator);
-        const ys = await tf.data.generator(datas.labelGenerator);
-        const ds = await tf.data.zip({xs,ys}).shuffle(imgPath.length).batch(64);
-        let model = await getModelFromJson();
-
-        //getModel failed
-        if(model == false){
-            res.status(500);
-        }
-
-        //model train
-        let epoch = proj.models[0].fit.epochs;
-        let batchs = proj.models[0].fit.batch_size;
-        let val_per = proj.models[0].fit.val_data_per;
-        let history = await model.fitDataset(ds, {
-            epochs:1,
-            callbacks : {
-                onEpochEnd: async (batch, logs) => {
-                console.log(batch + ' : ' + logs.acc);
-            }}
-        });
-
-        //console.log(history);
+        //history 출력가능
+        console.log(history);
 
         //trained model save
-        let modelSavePath = "../";
+        let modelSavePath = "../"; //실제론 사용자와 db의 프로젝트 경로를 사용해서 save경로 선택
         if (modelSavePath != null) {
             await model.save(`file://${modelSavePath}`);
             console.log(`Saved model to path: ${modelSavePath}`);
+            res.status(200);
         }
         
         //JSON to model
@@ -89,9 +93,6 @@ module.exports = {
             }
             return model;
         }
-        function getType(target) {
-            return Object.prototype.toString.call(target);
-        }
     },
 
     async testModel(req, res){
@@ -99,17 +100,25 @@ module.exports = {
         //모델이 제데로 로드되는건 확인완료했습니다.
         
         //test model load
-        let saved_model_path = '../';
-        const modelPrime = await tf.loadLayersModel(`file://${saved_model_path}/model.json`);
-        modelPrime.compile({
-            optimizer : proj.models[0].compile.optimizer,
-            loss : proj.models[0].compile.loss,
-            metrics   : ['accuracy']
-        });
-        modelPrime.summary();
+        let modelPrime;
+        let saved_model_path = '../'; //실제론 db에서 질의
+        try {
+            modelPrime = await tf.loadLayersModel(`file://${saved_model_path}/model.json`);
+            modelPrime.compile({
+                optimizer : proj.models[0].compile.optimizer,
+                loss : proj.models[0].compile.loss,
+                metrics   : ['accuracy']
+            });
+            modelPrime.summary();
+        }
+        catch(e){
+            console.log(`Can't load model`);
+            return false;
+        }
+        
 
         //test image load
-        let path = "../public/trainingSet/trainingSet";
+        let path = "../public/mnist/trainingSet/trainingSet"; //실제론 db질의
         let img_format = proj.data.info.format;
         let img_shape = proj.data.info.shape;
         let imgPath = await datas.dataInit(path, img_format, img_shape);
@@ -118,7 +127,7 @@ module.exports = {
         const ds = await tf.data.zip({xs,ys}).shuffle(imgPath.length).batch(64);
 
         //model evaluation
-        const result = await modelPrime.evaluateDataset(ds);
+        let result = await modelPrime.evaluateDataset(ds);
 
         //print evaluation result
         console.log(`result(loss) : ${result[0]}`);

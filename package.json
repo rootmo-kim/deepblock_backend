@@ -10,7 +10,8 @@
     "express": "^4.17.1",
     "fs": "0.0.1-security",
     "path": "^0.12.7",
-    "pureimage": "^0.2.1"
+    "pureimage": "^0.2.1",
+    "sequelize": "^5.21.6"
   },
   "devDependencies": {},
   "scripts": {

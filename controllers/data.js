@@ -3,25 +3,11 @@ let tf          = require("@tensorflow/tfjs-node");
 let fs          = require('fs');
 let path        = require("path");
 
-
-function getImgPath(startPath, fileExt) {
-    const dirName = fs.readdirSync(startPath, { withFileTypes: true }).filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
-    const imgPath = [];
-    dirName.forEach(name => {
-        const filePath = path.join(startPath, name);
-        const fileName = fs.readdirSync(filePath).filter((file) => file.endsWith(fileExt));
-        fileName.forEach(file => {
-            const fullPath = path.join(startPath, name, file);
-            imgPath.push(fullPath);
-        });
-    });
-    return imgPath;
-}
-
 let _imgPath;
 let width;
 let height;
 let dim;
+
 exports.dataInit = async function (path, imgType, shape){
     _imgPath = await getImgPath(path, imgType);
     width = shape[0];
@@ -29,24 +15,6 @@ exports.dataInit = async function (path, imgType, shape){
     dim = shape[2];
     return _imgPath;
 };
-
-function loadImage(imgPath){
-    let img;
-    if(imgPath.split('.').pop() == 'jpg'){
-        img = PImage.decodeJPEGFromStream(fs.createReadStream(imgPath));
-    }
-    else if(imgPath.split('.').pop() == 'png'){
-        img = PImage.decodePNGFromStream(fs.createReadStream(imgPath));
-    }
-    else{
-        console.log('Input image is not supported format. Use jpg or png.');
-    }
-    return img;
-}
-
-function getType(target) {
-    return Object.prototype.toString.call(target);
-}
 
 exports.imageGenerator = async function*() {
     //console.log(_imgPath.length);
@@ -83,3 +51,36 @@ exports.labelGenerator = async function*() {
         }
     }
 };
+
+function getImgPath(startPath, fileExt) {
+    const dirName = fs.readdirSync(startPath, { withFileTypes: true }).filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
+    const imgPath = [];
+    dirName.forEach(name => {
+        const filePath = path.join(startPath, name);
+        const fileName = fs.readdirSync(filePath).filter((file) => file.endsWith(fileExt));
+        fileName.forEach(file => {
+            const fullPath = path.join(startPath, name, file);
+            imgPath.push(fullPath);
+        });
+    });
+    return imgPath;
+}
+
+function loadImage(imgPath){
+    let img;
+    if(imgPath.split('.').pop() == 'jpg'){
+        img = PImage.decodeJPEGFromStream(fs.createReadStream(imgPath));
+    }
+    else if(imgPath.split('.').pop() == 'png'){
+        img = PImage.decodePNGFromStream(fs.createReadStream(imgPath));
+    }
+    else{
+        console.log('Input image is not supported format. Use jpg or png.');
+    }
+    return img;
+}
+
+function getType(target) {
+    return Object.prototype.toString.call(target);
+}
+
