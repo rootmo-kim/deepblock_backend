@@ -27,7 +27,6 @@ app.use(sanitizer);
 // db_models.sync();
 
 
-
 app.get('/', function (req, res, next) {
   res.status(200).send('Hello world!');
   //res.status(404);
@@ -41,16 +40,16 @@ app.post('/unregister' ,authMiddleware , userController.unregister);
 
 //projectControllers
 app.get('/users/:id/projects', authMiddleware, projectController.viewProject);
-app.post('/projects', authMiddleware, projectController.createProject);
-app.delete('/projects', authMiddleware, projectController.deleteProject);
+app.post('/users/projects', authMiddleware, projectController.createProject);
+app.delete('/users/projects', authMiddleware, projectController.deleteProject);
 
 //load project
-app.get('/users/:id/projects/:name', authMiddleware, jsonController.sendJSON);
+app.get('/users/:id/projects/:name', authMiddleware, projectController.loadProject);
 
 //dataControllers
 app.get('/users/:id/data', authMiddleware, dataController.viewData);
-app.post('/data', authMiddleware, dataController.uploadData);
-app.delete('/data', authMiddleware, dataController.deleteData);
+app.post('/users/data', authMiddleware, dataController.uploadData);
+app.delete('/users/data', authMiddleware, dataController.deleteData);
 
 //jsonController - updateJSON per 5sec
 app.put('/board', authMiddleware, jsonController.updateJSON);
