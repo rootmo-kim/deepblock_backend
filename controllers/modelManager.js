@@ -1,35 +1,30 @@
 let fs      = require('fs');
 let tf      = require("@tensorflow/tfjs-node");
-let datas   = require("./data");
+let path    = require("path");
+let data_loader   = require("./data");
+
+//삭제 예정
 let proj    = require("../public/json/model_info.json");
 
 
 module.exports = {
     async trainModel(req, res){
-        //컴파일된 모델을 업로드된 데이터를 사용하여 학습함
-
-        //유저가 선택한 데이터가 무엇인지 req에서 가져와 /user/req.body.dataset_name 을 db에서 경로 참조
-        //model의 input과 이미지의 크기를 비교하는 과정이 필요 - 예외처리
-        //문제없으면 해당경로의 이미지를 읽어옴
-        //epoch과 batch등을 변수에
-        //모델을 다시 컴파일한 후 모델 피팅 시작
-        //학습결과를 저장
-        //학습결과 저장경로를 db에 저장
-
-
         //const modelSavePath = `/DB/${req.body.user_name}/${req.body.proj_name}/result`;
         let history;
         let model;
-
+        //let data_path = '../public/mnist/trainingSet/trainingSet';
+        let data_path = path.normalize('C:/Users/JinSung/Desktop/deepblock_git/tfjs_practice/public/mnist/trainingSet/trainingSet');
+        //let proj = path.normalize('');
+        
         if(proj.data.type == "img"){
             //train image load
-            let path = "../public/mnist/trainingSet/trainingSet"; // 실제론 db에서 질의
+             // 실제론 db에서 질의
             let img_format = proj.data.info.format; // 강제로 png사용하게 변환
             let img_shape = proj.data.info.shape;
 
-            let imgPath = await datas.dataInit(path, img_format, img_shape);
-            const xs = await tf.data.generator(datas.imageGenerator);
-            const ys = await tf.data.generator(datas.labelGenerator);
+            let imgPath = await data_loader.dataInit(data_path, img_format, img_shape);
+            const xs = await tf.data.generator(data_loader.imageGenerator);
+            const ys = await tf.data.generator(data_loader.labelGenerator);
             const ds = await tf.data.zip({xs,ys}).shuffle(imgPath.length).batch(64);
 
             //model compile
@@ -44,7 +39,7 @@ module.exports = {
             let epoch = proj.models[0].fit.epochs;
             let batchs = proj.models[0].fit.batch_size;
             let val_per = proj.models[0].fit.val_data_per;
-            history = await model.fitDataset(ds, {
+            history = await model.fitdata_loaderet(ds, {
                 epochs:3,
                 callbacks : {
                     //onEpochEnd = epoch 종료시 프린트
@@ -121,13 +116,13 @@ module.exports = {
         let path = "../public/mnist/trainingSet/trainingSet"; //실제론 db질의
         let img_format = proj.data.info.format;
         let img_shape = proj.data.info.shape;
-        let imgPath = await datas.dataInit(path, img_format, img_shape);
-        const xs = await tf.data.generator(datas.imageGenerator);
-        const ys = await tf.data.generator(datas.labelGenerator);
+        let imgPath = await data_loader.dataInit(path, img_format, img_shape);
+        const xs = await tf.data.generator(data_loader.imageGenerator);
+        const ys = await tf.data.generator(data_loader.labelGenerator);
         const ds = await tf.data.zip({xs,ys}).shuffle(imgPath.length).batch(64);
 
         //model evaluation
-        let result = await modelPrime.evaluateDataset(ds);
+        let result = await modelPrime.evaluatedata_loaderet(ds);
 
         //print evaluation result
         console.log(`result(loss) : ${result[0]}`);

@@ -12,4 +12,8 @@ module.exports = {
     logout(req, res){
         //로그아웃
     },
+
+    unregister(req, res){
+        
+    }
 };

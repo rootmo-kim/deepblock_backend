@@ -11,33 +11,39 @@ const modelMiddleware = (req, res, next) => {
             //     success: false,
             //     message: 'layers are null'
             // })
+            console.log('bye');
             return false;
         }
     }
 
     const p = new Promise(
         (resolve, reject) => {
-            for(var _model of proj.models){
-                if(proj.data.type == "img"){
-                    for(var i=0 ; i<proj.data.info.shape.length; i++){
-                        if(proj.data.info.shape[i] != _model.layers[0].params.inputShape[i]){
-                            reject(`data size error`);
-                        }
-                    }
-                }else{
-                    if(proj.data.info.total_column != _model.layers[0].params.units){
-                        reject(`data size error`);
-                    }
-                }
+            // for(var _model of proj.models){
+            //     if(proj.data.type == "img"){
+            //         for(var i=0 ; i<proj.data.info.shape.length; i++){
+            //             if(proj.data.info.shape[i] != _model.layers[0].params.inputShape[i]){
+            //                 console.log(`data size error`)
+            //                 reject(`data size error`);
+            //             }
+            //         }
+            //     }else{
+            //         if(proj.data.info.total_column != _model.layers[0].params.units){
+            //             console.log('data size error');
+            //             reject(`data size error`);
+            //         }
+            //     }
 
-                if(_models.total_layer - 1 != _model.link_info.total_link){
-                    reject(`connection error`);
-                }
-                
-                if(_model.layer[_model.layers.length-1].type != "dense"){
-                    reject('final layer error');
-                }
-            }
+            //     if(_models.total_layer - 1 != _model.link_info.total_link){
+            //         console.log('connection error');
+            //         reject(`connection error`);
+            //     }
+
+            //     if(_model.layer[_model.layers.length-1].type != "dense"){
+            //         console.log('final layer error');
+            //         reject('final layer error');
+            //     }
+            // }
+            console.log('success');
             resolve();
         }
     )
@@ -46,7 +52,7 @@ const modelMiddleware = (req, res, next) => {
         next();
     })
     .catch(function(eeror) {
-        console.log("test failed");
+        console.log(error);
             // return res.status(403).json({
             //     success: false,
             //     message: error
