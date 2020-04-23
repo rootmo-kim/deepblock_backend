@@ -11,7 +11,6 @@ module.exports = {
         console.log("uploadData");
         var imgFile = req.file;
         console.log(imgFile);
-
     },
 
     deleteData(req, res){

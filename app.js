@@ -2,7 +2,10 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var Sequelize = require('sequelize');
+var session = require('express-session');
 var multer = require("multer");
+
+
 // controllers
 var userController = require('./controllers/userManager');
 var projectController = require('./controllers/projectManager');
@@ -14,13 +17,25 @@ var jsonController = require('./controllers/jsonManager');
 var authMiddleware = require('./middlewares/author');
 var modelMiddleware = require('./middlewares/model');
 var sanitizer = require('./middlewares/sanitizer');
+var models = require("./models/index.js");
 
 // Init Express
 var app = express();
 
+app.use(session({
+  key: 'sid',
+  secret: 'secret',
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    maxAge: 24000 * 60 * 60
+  }
+}));
+
 // Set up body-parser with JSON
 app.use(bodyParser.json());
 app.use(sanitizer);
+
 
 models.sequelize.sync().then( () => {
   console.log(" DB 연결 성공");
@@ -28,16 +43,6 @@ models.sequelize.sync().then( () => {
   console.log("연결 실패");
   console.log(err);
 });
-// Import the sequelize models
-// var db_models = require('./models').sequelize;
-// db_models.sync();
-
-
-app.get('/', function (req, res, next) {
-  res.status(200).send('Hello world!');
-  //res.status(404);
-});
-
 
 //multer example
 var storage = multer.diskStorage({
@@ -49,6 +54,14 @@ var storage = multer.diskStorage({
   }
 });
 var upload = multer({storage : storage});
+
+/*
+  Request API
+*/
+app.get('/', function (req, res, next) {
+  res.status(200).send('Hello world!');
+  //res.status(404);
+});
 
 //userControllers
 app.post('/register' ,userController.register);
@@ -76,8 +89,8 @@ app.put('/board', authMiddleware, jsonController.updateJSON);
 app.post('/board/train', authMiddleware, modelMiddleware, modelController.trainModel);
 app.post('/board/test', authMiddleware, modelMiddleware, modelController.testModel);
 
-app.listen(process.env.PORT || 8000, function () {
-  console.log('listening on port 8000');
+app.listen(process.env.PORT || 8080, function () {
+  console.log('listening on port 8080');
 });
 
 
