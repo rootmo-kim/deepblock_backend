@@ -1,6 +1,3 @@
-
-
-
 module.exports = {
     viewData(req, res){
         console.log("viewData");

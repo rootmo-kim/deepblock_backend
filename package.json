@@ -11,13 +11,14 @@
     "express-session": "^1.17.1",
     "fs": "0.0.1-security",
     "my-sql": "^1.2.15",
+    "mysql2": "^2.1.0",
     "path": "^0.12.7",
     "pureimage": "^0.2.1",
     "sequelize": "^5.21.6"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jinsung",
   "license": "ISC"
