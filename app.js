@@ -6,7 +6,7 @@ var sequelize = require('./models').sequelize;
 var session = require('express-session');
 var multer = require("multer");
 var {check, validationResult} = require('express-validator');
-const mime = require("mime-types");
+
 // controllers
 var userController = require('./controllers/userManager');
 var projectController = require('./controllers/projectManager');
@@ -47,42 +47,22 @@ sequelize.sync().then( () => {
 //multer example
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    console.log(`${mime.extension(file.mimetype)}`)
-    cb(null, `uploadTest/`); // cb 콜백함수를 통해 전송된 파일 저장 디렉토리 설정
+    cb(null, `${file.fieldname}`);
   },
   filename: function (req, file, cb) {
-    console.log(file);
     let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`
     cb(null, filename); 
   }
 });
 var upload = multer({storage : storage});
 
-// const customStorage = require('./storage')
-
-// let dirname = 0
-// let storage = customStorage({
-//   destination: function (req, file, cb) {
-//     console.log(req)
-//     cb(null, `uploadTest/` + file.originalname)
-//   },
-//   // filename: (req, file, cb) => {
-//   //   console.log(file)
-//   //   cb(null, file.originalname)
-//   // }
-//   // basename: ()=>{return `${cnt}`}
-// });
-
-// let upload = multer({storage : storage});
-
 /*
   Request API
 */
 
-/// for test
+////////// for test ///////// 
 app.post('/upload', upload.array('image'), dataController.uploadData);
-
-///////////////////
+/////////////////////////////
 
 app.get('/', function (req, res, next) {
   res.status(200).send('Hello world!');
