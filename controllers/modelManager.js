@@ -39,7 +39,7 @@ module.exports = {
             let epoch = proj.models[0].fit.epochs;
             let batchs = proj.models[0].fit.batch_size;
             let val_per = proj.models[0].fit.val_data_per;
-            history = await model.fitdata_loaderet(ds, {
+            history = await model.fitDataset(ds, {
                 epochs:3,
                 callbacks : {
                     //onEpochEnd = epoch 종료시 프린트
@@ -122,7 +122,7 @@ module.exports = {
         const ds = await tf.data.zip({xs,ys}).shuffle(imgPath.length).batch(64);
 
         //model evaluation
-        let result = await modelPrime.evaluatedata_loaderet(ds);
+        let result = await modelPrime.evaluateDataset(ds);
 
         //print evaluation result
         console.log(`result(loss) : ${result[0]}`);
