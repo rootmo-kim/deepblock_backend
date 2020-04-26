@@ -1,7 +1,7 @@
 // modules
 var express = require('express');
 var bodyParser = require('body-parser');
-var Sequelize = require('sequelize');
+var sequelize = require('./models').sequelize;
 var session = require('express-session');
 
 // controllers
@@ -15,7 +15,6 @@ var jsonController = require('./controllers/jsonManager');
 var authMiddleware = require('./middlewares/author');
 var modelMiddleware = require('./middlewares/model');
 var sanitizer = require('./middlewares/sanitizer');
-var models = require("./models/index.js");
 
 // Init Express
 var app = express();
@@ -35,7 +34,7 @@ app.use(bodyParser.json());
 app.use(sanitizer);
 
 
-models.sequelize.sync().then( () => {
+sequelize.sync().then( () => {
   console.log(" DB 연결 성공");
 }).catch(err => {
   console.log("연결 실패");

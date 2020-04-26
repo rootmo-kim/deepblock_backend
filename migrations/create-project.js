@@ -8,15 +8,11 @@ module.exports = {
         autoIncrement: true,
         type: Sequelize.INTEGER
       },
-      project_id: {
+      project_name: {
         type: Sequelize.STRING,
         primaryKey: true,
         allowNull: false,
         unique: true,
-      },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false
       },
       path: {
         type: Sequelize.STRING,

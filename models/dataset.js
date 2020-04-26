@@ -1,7 +1,7 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  const project = sequelize.define('project', {
-    project_name: {
+  const dataset = sequelize.define('dataset', {
+    dataset_name: {
       type: DataTypes.STRING,
       primaryKey: true,
       allowNull: false,
@@ -12,10 +12,14 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     }
   }, {});
-  project.associate = function(models) {
-    project.belongsTo(models.user,{
+  dataset.associate = function(models) {
+    dataset.hasMany(models.project,{
+      foreignKey: 'project_name'
+    })
+
+    dataset.belongsTo(models.user,{
       foreignKey: 'user_id'
     })
   };
-  return project;
+  return dataset;
 };

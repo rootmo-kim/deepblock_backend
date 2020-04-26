@@ -1,22 +1,18 @@
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('data', {
+    return queryInterface.createTable('dataset', {
       no: {
         unique: true,
         allowNull: false,
         autoIncrement: true,
         type: Sequelize.INTEGER
       },
-      data_id: {
+      dataset_name: {
         type: Sequelize.STRING,
         primaryKey: true,
         allowNull: false,
         unique: true
-      },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false
       },
       path: {
         type: Sequelize.STRING,
@@ -33,6 +29,6 @@ module.exports = {
     });
   },
   down: (queryInterface, Sequelize) => {
-    return queryInterface.dropTable('data');
+    return queryInterface.dropTable('dataset');
   }
 };
