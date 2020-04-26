@@ -3,12 +3,12 @@
 module.exports = {
     viewProject(req, res){
         console.log('viewProject');
-        console.log(req.query.id);
         res.status(200).send("성공!");
     },
 
     createProject(req, res){
         console.log('createProject');
+        console.log(req.body.project_name);
     },
 
     deleteProject(req, res){

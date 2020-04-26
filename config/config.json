@@ -2,7 +2,7 @@
   "development": {
     "username": "root",
     "password": "3578",
-    "database": "models",
+    "database": "deepblock",
     "host": "127.0.0.1",
     "dialect": "mysql",
     "operatorsAliases": false
