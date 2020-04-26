@@ -2,7 +2,7 @@
 var express = require('express');
 var expressSanitizer = require('express-sanitizer');
 var bodyParser = require('body-parser');
-var Sequelize = require('sequelize');
+var sequelize = require('./models').sequelize;
 var session = require('express-session');
 var multer = require("multer");
 var {check, validationResult} = require('express-validator');
@@ -19,7 +19,10 @@ var authMiddleware = require('./middlewares/author');
 var dataMiddleware = require('./middlewares/data');
 var modelMiddleware = require('./middlewares/model');
 var sanitizer = require('./middlewares/sanitizer');
+<<<<<<< HEAD
+=======
 var models = require("./models/index");
+>>>>>>> origin/master
 
 // Init Express
 var app = express();
@@ -38,7 +41,7 @@ app.use(session({
 app.use(bodyParser.json());
 app.use(expressSanitizer());
 
-models.sequelize.sync().then( () => {
+sequelize.sync().then( () => {
   console.log(" DB 연결 성공");
 }).catch(err => {
   console.log("연결 실패");
