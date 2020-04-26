@@ -19,10 +19,6 @@ var authMiddleware = require('./middlewares/author');
 var dataMiddleware = require('./middlewares/data');
 var modelMiddleware = require('./middlewares/model');
 var sanitizer = require('./middlewares/sanitizer');
-<<<<<<< HEAD
-=======
-var models = require("./models/index");
->>>>>>> origin/master
 
 // Init Express
 var app = express();

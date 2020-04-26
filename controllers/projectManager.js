@@ -12,7 +12,6 @@ module.exports = {
     },
 
     createProject(req, res){
-<<<<<<< HEAD
         // models.project.create({
         //     project_name: req.body.project_name,
         //     path: req.body.path
@@ -40,10 +39,8 @@ module.exports = {
         //         message: "실패"
         //     })
         // })
-=======
         console.log('createProject');
         console.log(req.body.project_name);
->>>>>>> origin/master
     },
 
     deleteProject(req, res){

@@ -118,3 +118,6 @@ dist
 
 #migrations
 migrations/
+
+#database
+config/
