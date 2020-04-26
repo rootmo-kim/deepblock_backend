@@ -2,7 +2,11 @@
   "development": {
     "username": "root",
     "password": "3578",
+<<<<<<< HEAD
     "database": "deepblock_db",
+=======
+    "database": "deepblock",
+>>>>>>> origin/master
     "host": "127.0.0.1",
     "dialect": "mysql",
     "operatorsAliases": false

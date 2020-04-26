@@ -1,10 +1,11 @@
 // modules
 var express = require('express');
+var expressSanitizer = require('express-sanitizer');
 var bodyParser = require('body-parser');
 var sequelize = require('./models').sequelize;
 var session = require('express-session');
 var multer = require("multer");
-
+var {check, validationResult} = require('express-validator');
 
 // controllers
 var userController = require('./controllers/userManager');
@@ -15,8 +16,13 @@ var jsonController = require('./controllers/jsonManager');
 
 // middlewares
 var authMiddleware = require('./middlewares/author');
+var dataMiddleware = require('./middlewares/data');
 var modelMiddleware = require('./middlewares/model');
 var sanitizer = require('./middlewares/sanitizer');
+<<<<<<< HEAD
+=======
+var models = require("./models/index");
+>>>>>>> origin/master
 
 // Init Express
 var app = express();
@@ -33,8 +39,7 @@ app.use(session({
 
 // Set up body-parser with JSON
 app.use(bodyParser.json());
-app.use(sanitizer);
-
+app.use(expressSanitizer());
 
 sequelize.sync().then( () => {
   console.log(" DB 연결 성공");
@@ -44,15 +49,34 @@ sequelize.sync().then( () => {
 });
 
 //multer example
-var storage = multer.diskStorage({
+// var storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, 'uploadTest/'); // cb 콜백함수를 통해 전송된 파일 저장 디렉토리 설정
+//     //cb(null, 'db/req.query.id/data/req.body.data_name/')
+//   },
+//   filename: function (req, file, cb) {
+//     console.log(file);
+//     cb(null, file.originalname); // cb 콜백함수를 통해 전송된 파일 이름 설정
+//   }
+// });
+// var upload = multer({storage : storage});
+
+const customStorage = require('./storage')
+
+let dirname = 0
+let storage = customStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploadTest/'); // cb 콜백함수를 통해 전송된 파일 저장 디렉토리 설정
+    console.log(req)
+    cb(null, `uploadTest/` + file.originalname)
   },
-  filename: function (req, file, cb) {
-    cb(null, "0.png"); // cb 콜백함수를 통해 전송된 파일 이름 설정
-  }
+  // filename: (req, file, cb) => {
+  //   console.log(file)
+  //   cb(null, file.originalname)
+  // }
+  // basename: ()=>{return `${cnt}`}
 });
-var upload = multer({storage : storage});
+
+let upload = multer({storage : storage});
 
 /*
   Request API
@@ -63,32 +87,71 @@ app.get('/', function (req, res, next) {
 });
 
 //userControllers
-app.post('/register' ,userController.register);
-app.post('/login' ,userController.login);
+app.post('/register', [
+  check('user_id').trim().blacklist('\\').isLength({min : 6}),
+  check('userEmail').isEmail(),
+  check('password').trim().isLength({min : 6})
+], sanitizer, userController.register);
+app.post('/login' , [
+  check('user_id').trim().blacklist('\\').isLength({min : 6}),
+  check('password').trim().isLength({min : 6})
+], sanitizer, userController.login);
 app.post('/logout', authMiddleware,userController.logout);
-app.post('/unregister' ,authMiddleware , userController.unregister);
+app.post('/unregister', authMiddleware, [
+  check('user_id').trim().blacklist('\\').isLength({min : 6})
+], sanitizer, userController.unregister);
 
 //projectControllers
-app.get('/users/:id/projects', authMiddleware, projectController.viewProject);
-app.post('/users/:id/projects', authMiddleware, projectController.createProject);
-app.delete('/users/:id/projects', authMiddleware, projectController.deleteProject);
+app.get('/users/:id/projects', authMiddleware, [
+  check('id').trim().blacklist('\\').isLength({min : 6}),
+], sanitizer, projectController.viewProject);
+app.post('/users/:id/projects', authMiddleware, [
+  check('id').escape().trim().blacklist('\/[\/]'),
+  check('project_name').trim().blacklist('\/[\/]').escape()
+], sanitizer, projectController.createProject);
+app.delete('/users/:id/projects', authMiddleware, [
+  check('id').trim().blacklist('\\').isLength({min : 6}),
+  check('project_name').trim().blacklist('\\')
+], sanitizer, projectController.deleteProject);
 
 //load project
-app.get('/users/:id/projects/:name', authMiddleware, projectController.loadProject);
+app.get('/users/:id/projects/:name', authMiddleware, [
+  check('id').trim().blacklist('\\').isLength({min : 6}),
+  check('name').trim().blacklist('\\')
+], sanitizer, projectController.loadProject);
 
 //dataControllers
-app.get('/users/:id/data', authMiddleware, dataController.viewData);
-app.post('/users/:id/data', upload.single('image'),authMiddleware, dataController.uploadData); // multer example
-app.delete('/users/:id/data', authMiddleware, dataController.deleteData);
+app.get('/users/:id/data', authMiddleware, [
+  check('id').trim().blacklist('\\').isLength({min : 6})
+], sanitizer, dataController.viewData);
+
+//dataUpload 
+app.post('/users/:id/data', authMiddleware, [
+  check('id').escape().trim().blacklist('\/[\/]'),
+  check('data_name').trim().blacklist('\/[\/]')
+], sanitizer, upload.array('image'), dataController.uploadData);
+
+app.delete('/users/:id/data', authMiddleware, [
+  check('id').trim().blacklist('\\').isLength({min : 6}),
+//  check('data_name').trim().blacklist('\\')
+], sanitizer, dataController.deleteData);
 
 //jsonController - updateJSON per 5sec
 app.put('/board', authMiddleware, jsonController.updateJSON);
 
 //modelControllers
-app.post('/board/train', authMiddleware, modelMiddleware, modelController.trainModel);
-app.post('/board/test', authMiddleware, modelMiddleware, modelController.testModel);
+app.post('/board/train', authMiddleware, [
+  check('id').trim().blacklist('\\').isLength({min : 6}),
+  check('project_name').trim().blacklist('\\'),
+  check('data_name').trim().blacklist('\\')
+], sanitizer, modelMiddleware, modelController.trainModel);
+app.post('/board/test', authMiddleware, [
+  check('id').trim().blacklist('\\').isLength({min : 6}),
+  check('project_name').trim().blacklist('\\'),
+  check('data_name').trim().blacklist('\\')
+], sanitizer, modelMiddleware, modelController.testModel);
 
-app.listen(process.env.PORT || 8080, function () {
+app.listen(process.env.PORT || 8000, function () {
   console.log('listening on port 8080');
 });
 

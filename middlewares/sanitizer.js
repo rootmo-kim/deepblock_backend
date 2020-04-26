@@ -1,8 +1,15 @@
-
+let url = require("url");
+var {check, validationResult} = require('express-validator');
 
 const sanitizer = (req, res, next) => {
+    const errors = validationResult(req);
+    
     const p = new Promise(
         (resolve, reject) => {
+            console.log(errors);
+            if(!errors.isEmpty()){
+                reject(errors);
+            }
             resolve();
         }
     )
@@ -10,13 +17,12 @@ const sanitizer = (req, res, next) => {
         console.log("sanitizer success");
         next();
     })
-    .catch(function(eeror) {
+    .catch(function(errors) {
         console.log("sanitizer failed");
-            // return res.status(403).json({
-            //     success: false,
-            //     message: error
-            // });
-        next();
+        res.status(403).json({
+            success: false,
+            message: errors
+        });
     });
 };
 

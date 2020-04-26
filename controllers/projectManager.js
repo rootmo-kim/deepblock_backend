@@ -8,11 +8,11 @@ module.exports = {
 
         //find부분 필요
         console.log('viewProject');
-        console.log(req.query.id);
         res.status(200).send("성공!");
     },
 
     createProject(req, res){
+<<<<<<< HEAD
         // models.project.create({
         //     project_name: req.body.project_name,
         //     path: req.body.path
@@ -40,6 +40,10 @@ module.exports = {
         //         message: "실패"
         //     })
         // })
+=======
+        console.log('createProject');
+        console.log(req.body.project_name);
+>>>>>>> origin/master
     },
 
     deleteProject(req, res){
