@@ -45,38 +45,25 @@ sequelize.sync().then( () => {
 });
 
 //multer example
-// var storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, 'uploadTest/'); // cb 콜백함수를 통해 전송된 파일 저장 디렉토리 설정
-//     //cb(null, 'db/req.query.id/data/req.body.data_name/')
-//   },
-//   filename: function (req, file, cb) {
-//     console.log(file);
-//     cb(null, file.originalname); // cb 콜백함수를 통해 전송된 파일 이름 설정
-//   }
-// });
-// var upload = multer({storage : storage});
-
-const customStorage = require('./storage')
-
-let dirname = 0
-let storage = customStorage({
+var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    console.log(req)
-    cb(null, `uploadTest/` + file.originalname)
+    cb(null, `${file.fieldname}`);
   },
-  // filename: (req, file, cb) => {
-  //   console.log(file)
-  //   cb(null, file.originalname)
-  // }
-  // basename: ()=>{return `${cnt}`}
+  filename: function (req, file, cb) {
+    let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`
+    cb(null, filename); 
+  }
 });
-
-let upload = multer({storage : storage});
+var upload = multer({storage : storage});
 
 /*
   Request API
 */
+
+////////// for test ///////// 
+app.post('/upload', upload.array('image'), dataController.uploadData);
+/////////////////////////////
+
 app.get('/', function (req, res, next) {
   res.status(200).send('Hello world!');
   //res.status(404);
@@ -148,7 +135,7 @@ app.post('/board/test', authMiddleware, [
 ], sanitizer, modelMiddleware, modelController.testModel);
 
 app.listen(process.env.PORT || 8000, function () {
-  console.log('listening on port 8080');
+  console.log('listening on port 8000');
 });
 
 
