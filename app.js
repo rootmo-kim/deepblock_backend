@@ -8,11 +8,11 @@ var multer = require("multer");
 var {check, validationResult} = require('express-validator');
 
 // controllers
-var userController = require('./controllers/userManager');
-var projectController = require('./controllers/projectManager');
-var modelController = require('./controllers/modelManager');
-var dataController = require('./controllers/dataManager');
-var jsonController = require('./controllers/jsonManager');
+var userController = require('./controllers/userController');
+var projectController = require('./controllers/projectController');
+var modelController = require('./controllers/modelController');
+var dataController = require('./controllers/dataController');
+var jsonController = require('./controllers/jsonController');
 
 // middlewares
 var authMiddleware = require('./middlewares/author');

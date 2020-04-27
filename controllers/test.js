@@ -1,3 +1,3 @@
-const testModule = require('./modelManager');
+const testModule = require('./modelController');
 
 testModule.testModel();
