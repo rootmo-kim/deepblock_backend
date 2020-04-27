@@ -1,11 +1,13 @@
 const crypto = require("crypto");
 const models = require("../models");
 const salt = "s34i0mas21";
+// [Comment] var 최대한 쓰지 말고 const, let 사용 권장
 var fs = require('fs');
 
 //디렉토리 경로 나중에 서버로 바꿀꺼여~
 module.exports = {
     register(req, res){
+        // [Comment] 입력 받는 user_id 와 password 값 express-validator로 검증할 것
         const hashPassword = crypto.createHash("sha256").update(req.body.password + salt).digest("hex");
         const hashId = crypto.createHash("sha256").update(req.body.user_id + salt).digest("hex");
 
@@ -14,6 +16,7 @@ module.exports = {
             email: req.body.email,
             password: hashPassword
         })
+        // [Comment] Indentation 신경 쓸 것
         .then((user) => {
             //개인 디렉토리 생성(디렉토리 존재 여부)
             fs.access(`C:/Users/rootm/Desktop/MySQL_DB/${hashId}`, fs.constants.F_OK, (err)=>{
@@ -73,7 +76,7 @@ module.exports = {
     },
 
     async login(req, res){
-        //로그인
+        // [Comment] async 써준 이유 ?
         let hashPassword = crypto.createHash("sha256").update(req.body.password + salt).digest("hex");
 
         await models.user.findOne({
@@ -97,6 +100,8 @@ module.exports = {
             
         })
         .catch((error) =>{
+            // [Comment] 에러 핸들링 해주기, 이런 식으로 서버에서 발생한 err 자체를 사용자에게 던져주면 위험함.
+            // ex) console.log(error); res.status(500).json({msg:"login failed"})
             res.status(500).json(error)
         });
     },
@@ -110,5 +115,7 @@ module.exports = {
         res.status(200).json({
           message: "로그아웃 성공"
         });
+        // [Comment] TODO: 로그아웃 후 main 화면으로 redirect 시킬 것 
+        // ex) res.redirect('/') 
     },
 };
