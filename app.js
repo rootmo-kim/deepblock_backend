@@ -1,24 +1,29 @@
 // modules
-var express = require('express');
-var expressSanitizer = require('express-sanitizer');
-var bodyParser = require('body-parser');
-var sequelize = require('./models').sequelize;
-var session = require('express-session');
-var multer = require("multer");
-var {check, validationResult} = require('express-validator');
+let express = require('express');
+let expressSanitizer = require('express-sanitizer');
+let bodyParser = require('body-parser');
+let sequelize = require('./models').sequelize;
+let session = require('express-session');
+let multer = require("multer");
+let path = require('path');
+let {check, validationResult} = require('express-validator');
 
 // controllers
-var userController = require('./controllers/userController');
-var projectController = require('./controllers/projectController');
-var modelController = require('./controllers/modelController');
-var dataController = require('./controllers/dataController');
-var jsonController = require('./controllers/jsonController');
+let userController = require('./controllers/userController');
+let projectController = require('./controllers/projectController');
+let modelController = require('./controllers/modelController');
+let dataController = require('./controllers/dataController');
+let jsonController = require('./controllers/jsonController');
 
 // middlewares
-var authMiddleware = require('./middlewares/author');
-var dataMiddleware = require('./middlewares/data');
-var modelMiddleware = require('./middlewares/model');
-var sanitizer = require('./middlewares/sanitizer');
+let authMiddleware = require('./middlewares/author');
+let dataMiddleware = require('./middlewares/data');
+let modelMiddleware = require('./middlewares/model');
+let directoryMiddleware = require('./middlewares/directory');
+let sanitizer = require('./middlewares/sanitizer');
+
+
+
 
 // Init Express
 var app = express();
@@ -44,24 +49,49 @@ sequelize.sync().then( () => {
   console.log(err);
 });
 
-//multer example
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, `${file.fieldname}`);
+    let base_path = `C:/Users/JinSung/Desktop/deepblock_git/tfjs_practice/${req.query.id}/${req.query.name}/`;
+    let final_path = path.normalize(`${base_path}${file.fieldname}/`);
+    console.log(final_path);
+    cb(null, final_path);
   },
   filename: function (req, file, cb) {
-    let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`
+    //TODO : 파일명 hash해서 앞에 ?? 글자만 저장
+    let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`;
+    console.log(filename);
     cb(null, filename); 
   }
 });
 var upload = multer({storage : storage});
+
+// //multer example
+// var storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     let index = req.body.length - req.body.labels_num;
+//     let base_path = `C:/Users/JinSung/Desktop/deepblock_git/tfjs_practice/${req.query.id}/${req.body.dataset_name}/`;
+//     let img_path = base_path + req.body.data_labels[index];
+//     let base_dir_path = path.normalize(base_path);
+//     cb(null, `${req.body.id}`);
+//   },
+//   filename: function (req, file, cb) {
+//     let index = req.body.length - res.body.labels_num;
+//     req.body.data_labels_cnt[index] = req.body.data_labels_cnt[index] - 1;
+//     if(req.body.data_labels[index] == 0){
+//       req.body.labels_num = req.body.labels_num - 1;
+//     }
+//     let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`
+//     cb(null, filename); 
+//   }
+// });
 
 /*
   Request API
 */
 
 ////////// for test ///////// 
-app.post('/upload', upload.array('image'), dataController.uploadData);
+app.post('/upload/:id/data/:name/test1', directoryMiddleware.diretoryMiddleware, dataController.uploadData);//upload.array('image'), dataController.uploadData);
+app.post('/upload/:id/data/:name/test2', upload.any(), dataController.uploadData);
 /////////////////////////////
 
 app.get('/', function (req, res, next) {
@@ -88,11 +118,11 @@ app.post('/unregister', authMiddleware, [
 app.get('/users/:id/projects', authMiddleware, [
   check('id').trim().blacklist('\\').isLength({min : 6}),
 ], sanitizer, projectController.viewProject);
-app.post('/users/:id/projects', authMiddleware, [
+app.post('/users/:id/projects/:name', authMiddleware, [
   check('id').escape().trim().blacklist('\/[\/]'),
   check('project_name').trim().blacklist('\/[\/]').escape()
 ], sanitizer, projectController.createProject);
-app.delete('/users/:id/projects', authMiddleware, [
+app.delete('/users/:id/projects/:name', authMiddleware, [
   check('id').trim().blacklist('\\').isLength({min : 6}),
   check('project_name').trim().blacklist('\\')
 ], sanitizer, projectController.deleteProject);
@@ -109,12 +139,12 @@ app.get('/users/:id/data', authMiddleware, [
 ], sanitizer, dataController.viewData);
 
 //dataUpload 
-app.post('/users/:id/data', authMiddleware, [
+app.post('/users/:id/data/:name', authMiddleware, [
   check('id').escape().trim().blacklist('\/[\/]'),
   check('data_name').trim().blacklist('\/[\/]')
 ], sanitizer, upload.array('image'), dataController.uploadData);
 
-app.delete('/users/:id/data', authMiddleware, [
+app.delete('/users/:id/data/:name', authMiddleware, [
   check('id').trim().blacklist('\\').isLength({min : 6}),
 //  check('data_name').trim().blacklist('\\')
 ], sanitizer, dataController.deleteData);

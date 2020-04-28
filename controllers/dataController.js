@@ -10,11 +10,6 @@ module.exports = {
         //data 업로드
         console.log("uploadData");
         var imgFile = req.files;
-        let cnt = 0;
-        // for(let img of imgFile){
-        //     img.originalname = `${cnt}/${img.originalname}`
-            
-        // }
         console.log(imgFile);
 
     },
