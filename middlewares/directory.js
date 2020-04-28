@@ -1,5 +1,4 @@
 let fs = require("fs");
-let fsp = require("fs").promises;
 let path = require("path");
 let rimraf = require('rimraf');
 
@@ -13,7 +12,6 @@ exports.diretoryMiddleware = function(req, res, next){
     let base_dataset_path = path.normalize(dataset_path);
 
     const p =new Promise((resolve, reject) => {
-        //datset_name 중복 확인
         if(fs.existsSync(base_dataset_path)){
             reject("Duplicate dataset name");
         }else{
@@ -29,32 +27,6 @@ exports.diretoryMiddleware = function(req, res, next){
             }
         }
         resolve();
-
-        // await fsp.access(base_dir_path, fs.constants.F_OK)
-        // .then(()=>{
-        //     reject("Duplicate dataset name");
-        // }).catch(async function(){
-        //     await fsp.mkdir(base_dir_path)
-        //     .then(async function(){
-        //         for(var _label of data_labels){
-        //             let dir_path = path.normalize(`${base_path}/${_label}`);
-        //             await fsp.access(dir_path, fs.constants.F_OK)
-        //             .then(async function(){
-        //                 await rimraf.sync(`${base_dir_path}`);
-        //                 reject("Duplicate label");
-        //             }).catch(async function(){
-        //                 await fsp.mkdir(dir_path)
-        //                 .then(()=>{
-        //                 }).catch(()=>{
-        //                     reject("Data upload failed");
-        //                 });  
-        //             });
-        //         }
-        //     }).catch(()=>{
-        //         reject("Data upload failed");
-        //     });
-        // });
-        // resolve();
     });
     p.then(() => {
         console.log("Making directory success");
