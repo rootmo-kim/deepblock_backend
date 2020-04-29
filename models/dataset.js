@@ -1,25 +1,24 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  const dataset = sequelize.define('dataset', {
+  const Dataset = sequelize.define('Dataset', {
     dataset_name: {
-      type: DataTypes.STRING,
-      primaryKey: true,
       allowNull: false,
-      unique: true
-    },
-    path: {
-      type: DataTypes.STRING,
-      allowNull: false
+      type: DataTypes.STRING
     }
   }, {});
-  dataset.associate = function(models) {
-    dataset.hasMany(models.project,{
-      foreignKey: 'project_name'
+  Dataset.associate = function(models) {
+    models.Dataset.hasMany(models.Class,{
+      foreignKey: 'fk_dataset_id',
+      onDelete: 'cascade',
     })
-
-    dataset.belongsTo(models.user,{
-      foreignKey: 'user_id'
+    models.Dataset.hasMany(models.Train,{
+      foreignKey: 'fk_dataset_id',
+      onDelete: 'cascade',
+    })
+    models.Dataset.hasMany(models.Test,{
+      foreignKey: 'fk_dataset_id',
+      onDelete: 'cascade',
     })
   };
-  return dataset;
+  return Dataset;
 };

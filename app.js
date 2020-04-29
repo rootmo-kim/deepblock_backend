@@ -71,51 +71,51 @@ app.get('/', function (req, res, next) {
 
 //userControllers
 app.post('/register', [
-  check('user_id').trim().blacklist('\\').isLength({min : 6}),
-  check('userEmail').isEmail(),
+  check('user_name').trim().blacklist('\/[\/]').isLength({min : 6}),
+  check('email').isEmail(),
   check('password').trim().isLength({min : 6})
 ], sanitizer, userController.register);
 app.post('/login' , [
-  check('user_id').trim().blacklist('\\').isLength({min : 6}),
+  check('user_name').trim().blacklist('\/[\/]').isLength({min : 6}),
   check('password').trim().isLength({min : 6})
 ], sanitizer, userController.login);
 app.post('/logout', authMiddleware,userController.logout);
 app.post('/unregister', authMiddleware, [
-  check('user_id').trim().blacklist('\\').isLength({min : 6})
+  check('user_name').trim().blacklist('\/[\/]').isLength({min : 6})
 ], sanitizer, userController.unregister);
 
 //projectControllers
 app.get('/users/:id/projects', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6}),
+  check('id').trim().blacklist('\/[\/]').isLength({min : 6}),
 ], sanitizer, projectController.viewProject);
 app.post('/users/:id/projects', authMiddleware, [
   check('id').escape().trim().blacklist('\/[\/]'),
   check('project_name').trim().blacklist('\/[\/]').escape()
 ], sanitizer, projectController.createProject);
 app.delete('/users/:id/projects', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6}),
-  check('project_name').trim().blacklist('\\')
+  check('id').trim().blacklist('\/[\/]').isLength({min : 6}),
+  check('project_name').trim().blacklist('\/[\/]')
 ], sanitizer, projectController.deleteProject);
 
 //load project
 app.get('/users/:id/projects/:name', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6}),
-  check('name').trim().blacklist('\\')
+  check('id').trim().blacklist('\/[\/]').isLength({min : 6}),
+  check('name').trim().blacklist('\/[\/]')
 ], sanitizer, projectController.loadProject);
 
 //dataControllers
 app.get('/users/:id/data', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6})
+  check('id').trim().blacklist('\/[\/]').isLength({min : 6})
 ], sanitizer, dataController.viewData);
 
 //dataUpload 
 app.post('/users/:id/data', authMiddleware, [
   check('id').escape().trim().blacklist('\/[\/]'),
-  check('data_name').trim().blacklist('\/[\/]')
+  check('dataset_name').trim().blacklist('\/[\/]')
 ], sanitizer, upload.array('image'), dataController.uploadData);
 
 app.delete('/users/:id/data', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6}),
+  check('id').trim().blacklist('\/[\/]').isLength({min : 6}),
 //  check('data_name').trim().blacklist('\\')
 ], sanitizer, dataController.deleteData);
 
@@ -126,16 +126,16 @@ app.put('/board', authMiddleware, jsonController.updateJSON);
 app.post('/board/train', authMiddleware, [
   check('id').trim().blacklist('\\').isLength({min : 6}),
   check('project_name').trim().blacklist('\\'),
-  check('data_name').trim().blacklist('\\')
+  check('dataset_name').trim().blacklist('\\')
 ], sanitizer, modelMiddleware, modelController.trainModel);
 app.post('/board/test', authMiddleware, [
   check('id').trim().blacklist('\\').isLength({min : 6}),
   check('project_name').trim().blacklist('\\'),
-  check('data_name').trim().blacklist('\\')
+  check('dataset_name').trim().blacklist('\\')
 ], sanitizer, modelMiddleware, modelController.testModel);
 
-app.listen(process.env.PORT || 8000, function () {
-  console.log('listening on port 8000');
+app.listen(process.env.PORT || 8080, function () {
+  console.log('listening on port 8080');
 });
 
 

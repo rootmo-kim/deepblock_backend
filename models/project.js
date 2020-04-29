@@ -1,21 +1,24 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  const project = sequelize.define('project', {
+  const Project = sequelize.define('Project', {
     project_name: {
-      type: DataTypes.STRING,
-      primaryKey: true,
       allowNull: false,
-      unique: true
+      type: DataTypes.STRING
     },
     path: {
-      type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      type: DataTypes.STRING
     }
   }, {});
-  project.associate = function(models) {
-    project.belongsTo(models.user,{
-      foreignKey: 'user_id'
+  Project.associate = function(models) {
+    models.Project.hasMany(models.Train,{
+      foreignKey: 'fk_project_id',
+      onDelete: 'cascade',
+    })
+    models.Project.hasMany(models.Test,{
+      foreignKey: 'fk_project_id',
+      onDelete: 'cascade',
     })
   };
-  return project;
+  return Project;
 };

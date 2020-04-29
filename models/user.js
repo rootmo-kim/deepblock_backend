@@ -1,23 +1,30 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  const user = sequelize.define('user', {
-    user_id: {
-      type: DataTypes.STRING,
-      primaryKey: true,
+  const User = sequelize.define('User', {
+    user_name: {
       allowNull: false,
-      unique: true
+      primaryKey: true,
+      type: DataTypes.STRING,
     },
     password: {
-      type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      type: DataTypes.STRING
     },
     email: {
-      type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      type: DataTypes.STRING
     }
   }, {});
-  user.associate = function(models) {
-    // associations can be defined here
+  User.associate = function(models) {
+    models.User.hasMany(models.Project,{
+      foreignKey: 'fk_user_id',
+      onDelete: 'cascade',
+    })
+
+    models.User.hasMany(models.Dataset,{
+      foreignKey: 'fk_user_id',
+      onDelete: 'cascade',
+    })
   };
-  return user;
+  return User;
 };
