@@ -71,7 +71,7 @@ module.exports = {
     //             message: "해당 프로젝트가 없음"
     //         })
     //     })
-    // },
+    },
     loadProject(req, res){
         console.log('loadProject');
     }
