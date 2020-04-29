@@ -69,54 +69,62 @@ app.post('/upload/:id/data/:name/test1', directoryMiddleware.diretoryMiddleware,
 app.post('/upload/:id/data/:name/test2', upload.any(), dataController.uploadData);
 /////////////////////////////
 
-//userControllers 
-app.post('/register',[
-  check('user_id').trim().blacklist('\\').isLength({min : 6}),
-  check('userEmail').isEmail(),
+app.get('/', function (req, res, next) {
+  res.status(200).send('Hello world!');
+  //res.status(404);
+});
+
+//userControllers
+app.post('/register', [
+  check('user_name').trim().blacklist('\/[\/]').isLength({min : 6}),
+  check('email').isEmail(),
+
   check('password').trim().isLength({min : 6})
 ], sanitizer, userController.register);
 app.post('/login' , [
-  check('user_id').trim().blacklist('\\').isLength({min : 6}),
+  check('user_name').trim().blacklist('\/[\/]').isLength({min : 6}),
   check('password').trim().isLength({min : 6})
 ], sanitizer, userController.login);
 app.post('/logout', authMiddleware,userController.logout);
 app.post('/unregister', authMiddleware, [
-  check('user_id').trim().blacklist('\\').isLength({min : 6})
+  check('user_name').trim().blacklist('\/[\/]').isLength({min : 6})
 ], sanitizer, userController.unregister);
 
 //projectControllers
 app.get('/users/:id/projects', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6}),
+  check('id').trim().blacklist('\/[\/]').isLength({min : 6}),
 ], sanitizer, projectController.viewProject);
 app.post('/users/:id/projects/:name', authMiddleware, [
   check('id').escape().trim().blacklist('\/[\/]'),
   check('project_name').trim().blacklist('\/[\/]').escape()
 ], sanitizer, projectController.createProject);
-app.delete('/users/:id/projects/:name', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6}),
-  check('project_name').trim().blacklist('\\')
+
+
+app.delete('/users/:id/projects', authMiddleware, [
+  check('id').trim().blacklist('\/[\/]').isLength({min : 6}),
+  check('project_name').trim().blacklist('\/[\/]')
 ], sanitizer, projectController.deleteProject);
 
 //load project
 app.get('/users/:id/projects/:name', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6}),
-  check('name').trim().blacklist('\\')
+  check('id').trim().blacklist('\/[\/]').isLength({min : 6}),
+  check('name').trim().blacklist('\/[\/]')
 ], sanitizer, projectController.loadProject);
 
 //dataControllers
 app.get('/users/:id/data', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6})
+  check('id').trim().blacklist('\/[\/]').isLength({min : 6})
 ], sanitizer, dataController.viewData);
 
 //dataUpload 
 app.post('/users/:id/data/:name', authMiddleware, [
   check('id').escape().trim().blacklist('\/[\/]'),
-  check('data_name').trim().blacklist('\/[\/]')
+  check('dataset_name').trim().blacklist('\/[\/]')
 ], sanitizer, upload.array('image'), dataController.uploadData);
 
 app.delete('/users/:id/data/:name', authMiddleware, [
   check('id').trim().blacklist('\\').isLength({min : 6}),
-//  check('data_name').trim().blacklist('\\')
+  check('data_name').trim().blacklist('\\')
 ], sanitizer, dataController.deleteData);
 
 //jsonController - updateJSON per 5sec
@@ -126,12 +134,12 @@ app.put('/board', authMiddleware, jsonController.updateJSON);
 app.post('/board/train', authMiddleware, [
   check('id').trim().blacklist('\\').isLength({min : 6}),
   check('project_name').trim().blacklist('\\'),
-  check('data_name').trim().blacklist('\\')
+  check('dataset_name').trim().blacklist('\\')
 ], sanitizer, modelMiddleware, modelController.trainModel);
 app.post('/board/test', authMiddleware, [
   check('id').trim().blacklist('\\').isLength({min : 6}),
   check('project_name').trim().blacklist('\\'),
-  check('data_name').trim().blacklist('\\')
+  check('dataset_name').trim().blacklist('\\')
 ], sanitizer, modelMiddleware, modelController.testModel);
 
 // Listen
