@@ -113,11 +113,8 @@ dist
 *.jpeg
 
 #vscode
-./.vscode
+.vscode
 .vs
-
-#migrations
-migrations/
 
 #database
 config/
