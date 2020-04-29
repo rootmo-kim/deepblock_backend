@@ -1,7 +1,7 @@
 let fs      = require('fs');
 let tf      = require("@tensorflow/tfjs-node");
 let path    = require("path");
-let data_loader   = require("./data");
+let data_loader   = require("./dataLoader");
 
 //삭제 예정
 let proj    = require("../public/json/model_info.json");

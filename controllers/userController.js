@@ -2,11 +2,13 @@ const crypto = require("crypto");
 const models = require("../models");
 const salt = "s34i0mas21";
 const fs = require('fs');
-const base_path = "C:/Users/rootm/Desktop/MySQL_DB";
+//const base_path = "C:/Users/rootm/Desktop/MySQL_DB";
+
 
 //디렉토리 경로 나중에 서버로 바꿀꺼여~
 module.exports = {
     register(req, res){
+        // [Comment] 입력 받는 user_id 와 password 값 express-validator로 검증할 것
         const hashPassword = crypto.createHash("sha256").update(req.body.password + salt).digest("hex");
         const hashId = crypto.createHash("sha256").update(req.body.user_name + salt).digest("hex");
 
@@ -15,6 +17,7 @@ module.exports = {
             email: req.body.email,
             password: hashPassword
         })
+
         .then(() => {
             //개인 디렉토리 생성 //Todo: 개인 디렉토리 생성시 프로젝트, 데이터셋 디렉토리 생성
             fs.mkdir(`${base_path}/${hashId}`,function(err){
@@ -108,5 +111,6 @@ module.exports = {
           message: "로그아웃 성공"
         });
         //res.redirect('/');
+
     },
 };
