@@ -16,11 +16,12 @@ let jsonController = require('./controllers/jsonController');
 
 // middlewares
 let authMiddleware = require('./middlewares/author');
-let modelMiddleware = require('./middlewares/model');
 let directoryMiddleware = require('./middlewares/directory').diretoryMiddleware;
 let sanitizer = require('./middlewares/sanitizer');
 
 let base_path = require('./config/config').base_path;
+const project_dir_name = req('../config/config').projects;
+const data_dir_name = req('../config/config').datasets;
 
 // Init Express
 var app = express();
@@ -49,9 +50,8 @@ sequelize.sync().then( () => {
 // Init multer
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    let base_path = `${base_path$}${req.query.id}/${req.query.name}/`;
-    let final_path = path.normalize(`${base_path}${file.fieldname}/`);
-    cb(null, final_path);
+    let path = `${base_path}/${req.query.id}/${req.query.name}/${file.fieldname}/`;
+    cb(null, path);
   },
   filename: function (req, file, cb) {
     //TODO : 파일명 hash해서 앞에 ?? 글자만 저장, mime type 추가
