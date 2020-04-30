@@ -117,4 +117,4 @@ dist
 .vs
 
 #database
-config/
+config/config.json

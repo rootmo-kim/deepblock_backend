@@ -1,25 +1,26 @@
 let fs      = require('fs');
 let tf      = require("@tensorflow/tfjs-node");
 let path    = require("path");
-let data_loader   = require("./dataLoader");
 
-//삭제 예정
+let data_loader   = require("./dataLoader");
+const salt = require('../config/config').salt;
+const base_path = require('../config/config').base_path;
+const hash = require('../config/config').hash;
+
+//삭제 예정 //TODO : DB에서 json 경로 질의
 let proj    = require("../public/json/model_info.json");
 
 
 module.exports = {
     async trainModel(req, res){
-        //const modelSavePath = `/DB/${req.body.user_name}/${req.body.proj_name}/result`;
         let history;
         let model;
-        //let data_path = '../public/mnist/trainingSet/trainingSet';
-        let data_path = path.normalize('C:/Users/JinSung/Desktop/deepblock_git/tfjs_practice/public/mnist/trainingSet/trainingSet');
-        //let proj = path.normalize('');
+        let data_path = `${base_path}/public/mnist/trainingSet/trainingSet`;
         
         if(proj.data.type == "img"){
             //train image load
-             // 실제론 db에서 질의
-            let img_format = proj.data.info.format; // 강제로 png사용하게 변환
+            //TODO : DB에서 데이터 경로 질의
+            let img_format = proj.data.info.format;
             let img_shape = proj.data.info.shape;
 
             let imgPath = await data_loader.dataInit(data_path, img_format, img_shape);
@@ -49,17 +50,18 @@ module.exports = {
                 }}
             });
         }else if(proj.data.type == "csv"){
-            //csv 는 아직 감이 잘 안잡힘.
+            //TODO : csv데이터 구현예정
         }else{
-            console.log(`지원하지 않는 데이터 타입`);
-            return false;
+            return res.status(403).json({
+                massage : "지원하지않는 데이터"
+            });
         }
 
         //history 출력가능
         console.log(history);
 
         //trained model save
-        let modelSavePath = "../"; //실제론 사용자와 db의 프로젝트 경로를 사용해서 save경로 선택
+        let modelSavePath = `${base_path}/public`; //TODO : DB에서 사용자 프로젝트경로 질의
         if (modelSavePath != null) {
             await model.save(`file://${modelSavePath}`);
             console.log(`Saved model to path: ${modelSavePath}`);
@@ -91,12 +93,9 @@ module.exports = {
     },
 
     async testModel(req, res){
-        //학습이 완료된 모델을 테스트함 
-        //모델이 제데로 로드되는건 확인완료했습니다.
-        
         //test model load
         let modelPrime;
-        let saved_model_path = '../'; //실제론 db에서 질의
+        let saved_model_path = `${base_path}/public`; //TODO : DB에서 데이터 경로 질의
         try {
             modelPrime = await tf.loadLayersModel(`file://${saved_model_path}/model.json`);
             modelPrime.compile({
@@ -113,7 +112,7 @@ module.exports = {
         
 
         //test image load
-        let path = "../public/mnist/trainingSet/trainingSet"; //실제론 db질의
+        let path = `${base_path}/public/mnist/trainingSet/trainingSet`; //TODO : DB에서 데이터 경로 질의
         let img_format = proj.data.info.format;
         let img_shape = proj.data.info.shape;
         let imgPath = await data_loader.dataInit(path, img_format, img_shape);
