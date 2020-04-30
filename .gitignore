@@ -118,3 +118,5 @@ dist
 
 #database
 config/config.json
+
+test/

@@ -82,17 +82,20 @@ app.post('/unregister', authMiddleware, sanitizer, userController.unregister);
 
 //projectControllers
 app.get('/users/:id/projects', authMiddleware, sanitizer, projectController.viewProject);
-app.post('/users/:id/projects/:name', authMiddleware, sanitizer, projectController.createProject);
-app.delete('/users/:id/projects/:name', authMiddleware, sanitizer, projectController.deleteProject);
+app.post('/users/:id/projects', authMiddleware, sanitizer, projectController.createProject);
+app.delete('/users/:id/projects', authMiddleware, sanitizer, projectController.deleteProject);
 
 //load project
 app.get('/users/:id/projects/:name', authMiddleware, sanitizer, projectController.loadProject);
 
-//dataControllers
-app.get('/users/:id/data', authMiddleware, sanitizer, dataController.viewDataset);
-app.post('/users/:id/data', authMiddleware, sanitizer, directoryMiddleware, dataController.addDataset);
-app.post('/users/:id/data/:name', authMiddleware, sanitizer, upload.any(), dataController.uploadImage);
-app.delete('/users/:id/data/:name', authMiddleware, sanitizer, dataController.deleteDataset);
+//dataControllers - dataset
+app.get('/users/:id/dataset', authMiddleware, sanitizer, dataController.viewDataset);
+app.post('/users/:id/dataset', authMiddleware, sanitizer, dataController.addDataset);
+app.delete('/users/:id/dataset', authMiddleware, sanitizer, dataController.deleteDataset);
+
+//dataControllers - data
+app.post('/users/:id/dataset/:name', authMiddleware, sanitizer, upload.any(), dataController.uploadImage);
+app.delete('/users/:id/dataset/:name', authMiddleware, sanitizer, dataController.deleteImage);
 
 //jsonController - updateJSON per 5sec
 app.put('/board', authMiddleware, jsonController.updateJSON);
@@ -101,6 +104,10 @@ app.put('/board', authMiddleware, jsonController.updateJSON);
 app.post('/board/train', authMiddleware, sanitizer, modelController.trainModel);
 app.post('/board/test', authMiddleware, sanitizer, modelController.testModel);
 
+app.get('/test/:id', ((req, res)=>{
+  console.log(req.query.id);
+  console.log(req.params.id);
+}))
 
 // Listen
 app.listen(process.env.PORT || 8000, function () {
