@@ -5,8 +5,8 @@ const models = require("../models");
 const salt = require('../config/config').salt;
 const base_path = require('../config/config').base_path;
 const hash = require('../config/config').hash;
-const project_dir_name = req('../config/config').projects;
-const data_dir_name = req('../config/config').datasets;
+const project_dir_name = require('../config/config').projects;
+const data_dir_name = require('../config/config').datasets;
 
 
 //디렉토리 경로 나중에 서버로 바꿀꺼여~

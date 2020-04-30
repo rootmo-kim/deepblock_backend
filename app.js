@@ -20,8 +20,8 @@ let directoryMiddleware = require('./middlewares/directory').diretoryMiddleware;
 let sanitizer = require('./middlewares/sanitizer');
 
 let base_path = require('./config/config').base_path;
-const project_dir_name = req('../config/config').projects;
-const data_dir_name = req('../config/config').datasets;
+const project_dir_name = require('../config/config').projects;
+const data_dir_name = require('../config/config').datasets;
 
 // Init Express
 var app = express();

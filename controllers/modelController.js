@@ -6,8 +6,8 @@ let data_loader   = require("./dataLoader");
 const salt = require('../config/config').salt;
 const base_path = require('../config/config').base_path;
 const hash = require('../config/config').hash;
-const project_dir_name = req('../config/config').projects;
-const data_dir_name = req('../config/config').datasets;
+const project_dir_name = require('../config/config').projects;
+const data_dir_name = require('../config/config').datasets;
 
 //삭제 예정 //TODO : DB에서 json 경로 질의
 let proj    = require("../public/json/model_info.json");
