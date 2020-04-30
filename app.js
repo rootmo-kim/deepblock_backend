@@ -20,8 +20,8 @@ let directoryMiddleware = require('./middlewares/directory').diretoryMiddleware;
 let sanitizer = require('./middlewares/sanitizer');
 
 let base_path = require('./config/config').base_path;
-const project_dir_name = require('../config/config').projects;
-const data_dir_name = require('../config/config').datasets;
+const project_dir_name = require('./config/config').projects;
+const data_dir_name = require('./config/config').datasets;
 
 // Init Express
 var app = express();
@@ -65,7 +65,7 @@ var upload = multer({storage : storage});
   Request API
 */
 ////////// for test ///////// 
-app.post('/upload/:id/data/:name/test1', directoryMiddleware.diretoryMiddleware, dataController.addDataset);//upload.array('image'), dataController.uploadData);
+app.post('/upload/:id/data/:name/test1', directoryMiddleware, dataController.addDataset);//upload.array('image'), dataController.uploadData);
 app.post('/upload/:id/data/:name/test2', upload.any(), dataController.uploadImage);
 /////////////////////////////
 
@@ -98,8 +98,8 @@ app.delete('/users/:id/data/:name', authMiddleware, sanitizer, dataController.de
 app.put('/board', authMiddleware, jsonController.updateJSON);
 
 //modelControllers
-app.post('/board/train', authMiddleware, sanitizer, modelMiddleware, modelController.trainModel);
-app.post('/board/test', authMiddleware, sanitizer, modelMiddleware, modelController.testModel);
+app.post('/board/train', authMiddleware, sanitizer, modelController.trainModel);
+app.post('/board/test', authMiddleware, sanitizer, modelController.testModel);
 
 
 // Listen
