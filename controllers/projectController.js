@@ -1,8 +1,10 @@
 const crypto = require("crypto");
-const models = require("../models");
-const salt = "s34i0mas21";
 const fs = require('fs');
-const base_path = "C:/Users/rootm/Desktop/MySQL_DB";
+
+const models = require("../models");
+const salt = require('../config/config').salt;
+const base_path = require('../config/config').base_path;
+const hash = require('../config/config').hash;
 
 module.exports = {
     viewProject(req, res){
@@ -13,7 +15,7 @@ module.exports = {
     },
 
     createProject(req, res){
-        const hashId = crypto.createHash("sha256").update(req.query.id + salt).digest("hex");
+        const hashId = crypto.createHash(hash).update(req.query.id + salt).digest("hex");
         const proj_path = `${base_path}/${hashId}/${req.body.project_name}`;
 
         models.Project.create({
@@ -41,7 +43,7 @@ module.exports = {
 
     deleteProject(req, res){
         //Todo: 디렉토리 삭제 구현
-    //     const hashId = crypto.createHash("sha256").update(req.query.id + salt).digest("hex");
+    //     const hashId = crypto.createHash(hash).update(req.query.id + salt).digest("hex");
     //     const proj_path = `${base_path}/${hashId}/${req.body.project_name}`;
 
     //     models.User.destroy({

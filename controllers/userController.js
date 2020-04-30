@@ -1,16 +1,18 @@
 const crypto = require("crypto");
-const models = require("../models");
-const salt = "s34i0mas21";
 const fs = require('fs');
-//const base_path = "C:/Users/rootm/Desktop/MySQL_DB";
+
+const models = require("../models");
+const salt = require('../config/config').salt;
+const base_path = require('../config/config').base_path;
+const hash = require('../config/config').hash;
 
 
 //디렉토리 경로 나중에 서버로 바꿀꺼여~
 module.exports = {
     register(req, res){
         // [Comment] 입력 받는 user_id 와 password 값 express-validator로 검증할 것
-        const hashPassword = crypto.createHash("sha256").update(req.body.password + salt).digest("hex");
-        const hashId = crypto.createHash("sha256").update(req.body.user_name + salt).digest("hex");
+        const hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
+        const hashId = crypto.createHash(hash).update(req.body.user_name + salt).digest("hex");
 
         models.User.create({
             user_name: req.body.user_name,
@@ -39,7 +41,7 @@ module.exports = {
     },
 
     unregister(req, res){
-        const hashId = crypto.createHash("sha256").update(req.body.user_name + salt).digest("hex");
+        const hashId = crypto.createHash(hash).update(req.body.user_name + salt).digest("hex");
 
         models.User.destroy({
             where:{
@@ -72,7 +74,7 @@ module.exports = {
 
     login(req, res){
         //로그인
-        let hashPassword = crypto.createHash("sha256").update(req.body.password + salt).digest("hex");
+        let hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
 
         models.User.findOne({
             where: {

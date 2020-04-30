@@ -2,13 +2,17 @@ let fs = require("fs");
 let path = require("path");
 let rimraf = require('rimraf');
 
+const salt = require('../config/config').salt;
+const base_path = require('../config/config').base_path;
+const hash = require('../config/config').hash;
+
 exports.diretoryMiddleware = function(req, res, next){
     //TOTO : user name 해쉬화 필요
     let user_name = req.query.id;
     let dataset_name = req.query.name;
     let data_labels = req.body.data_labels;
 
-    let dataset_path = `C:/Users/JinSung/Desktop/deepblock_git/tfjs_practice/${user_name}/${dataset_name}`;
+    let dataset_path = `${base_path}/${user_name}/${dataset_name}`;
     let base_dataset_path = path.normalize(dataset_path);
 
     const p =new Promise((resolve, reject) => {

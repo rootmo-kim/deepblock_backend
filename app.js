@@ -16,11 +16,11 @@ let jsonController = require('./controllers/jsonController');
 
 // middlewares
 let authMiddleware = require('./middlewares/author');
-let dataMiddleware = require('./middlewares/data');
 let modelMiddleware = require('./middlewares/model');
-let directoryMiddleware = require('./middlewares/directory');
+let directoryMiddleware = require('./middlewares/directory').diretoryMiddleware;
 let sanitizer = require('./middlewares/sanitizer');
 
+let base_path = require('./config/config').base_path;
 
 // Init Express
 var app = express();
@@ -49,7 +49,7 @@ sequelize.sync().then( () => {
 // Init multer
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    let base_path = `C:/Users/JinSung/Desktop/deepblock_git/tfjs_practice/${req.query.id}/${req.query.name}/`;
+    let base_path = `${base_path$}${req.query.id}/${req.query.name}/`;
     let final_path = path.normalize(`${base_path}${file.fieldname}/`);
     cb(null, final_path);
   },
@@ -65,8 +65,8 @@ var upload = multer({storage : storage});
   Request API
 */
 ////////// for test ///////// 
-app.post('/upload/:id/data/:name/test1', directoryMiddleware.diretoryMiddleware, dataController.uploadData);//upload.array('image'), dataController.uploadData);
-app.post('/upload/:id/data/:name/test2', upload.any(), dataController.uploadData);
+app.post('/upload/:id/data/:name/test1', directoryMiddleware.diretoryMiddleware, dataController.addDataset);//upload.array('image'), dataController.uploadData);
+app.post('/upload/:id/data/:name/test2', upload.any(), dataController.uploadImage);
 /////////////////////////////
 
 app.get('/', function (req, res, next) {
@@ -75,72 +75,32 @@ app.get('/', function (req, res, next) {
 });
 
 //userControllers
-app.post('/register', [
-  check('user_name').trim().blacklist('\/[\/]').isLength({min : 6}),
-  check('email').isEmail(),
-
-  check('password').trim().isLength({min : 6})
-], sanitizer, userController.register);
-app.post('/login' , [
-  check('user_name').trim().blacklist('\/[\/]').isLength({min : 6}),
-  check('password').trim().isLength({min : 6})
-], sanitizer, userController.login);
+app.post('/register', sanitizer, userController.register);
+app.post('/login' , sanitizer, userController.login);
 app.post('/logout', authMiddleware,userController.logout);
-app.post('/unregister', authMiddleware, [
-  check('user_name').trim().blacklist('\/[\/]').isLength({min : 6})
-], sanitizer, userController.unregister);
+app.post('/unregister', authMiddleware, sanitizer, userController.unregister);
 
 //projectControllers
-app.get('/users/:id/projects', authMiddleware, [
-  check('id').trim().blacklist('\/[\/]').isLength({min : 6}),
-], sanitizer, projectController.viewProject);
-app.post('/users/:id/projects/:name', authMiddleware, [
-  check('id').escape().trim().blacklist('\/[\/]'),
-  check('project_name').trim().blacklist('\/[\/]').escape()
-], sanitizer, projectController.createProject);
-
-
-app.delete('/users/:id/projects', authMiddleware, [
-  check('id').trim().blacklist('\/[\/]').isLength({min : 6}),
-  check('project_name').trim().blacklist('\/[\/]')
-], sanitizer, projectController.deleteProject);
+app.get('/users/:id/projects', authMiddleware, sanitizer, projectController.viewProject);
+app.post('/users/:id/projects/:name', authMiddleware, sanitizer, projectController.createProject);
+app.delete('/users/:id/projects/:name', authMiddleware, sanitizer, projectController.deleteProject);
 
 //load project
-app.get('/users/:id/projects/:name', authMiddleware, [
-  check('id').trim().blacklist('\/[\/]').isLength({min : 6}),
-  check('name').trim().blacklist('\/[\/]')
-], sanitizer, projectController.loadProject);
+app.get('/users/:id/projects/:name', authMiddleware, sanitizer, projectController.loadProject);
 
 //dataControllers
-app.get('/users/:id/data', authMiddleware, [
-  check('id').trim().blacklist('\/[\/]').isLength({min : 6})
-], sanitizer, dataController.viewData);
-
-//dataUpload 
-app.post('/users/:id/data/:name', authMiddleware, [
-  check('id').escape().trim().blacklist('\/[\/]'),
-  check('dataset_name').trim().blacklist('\/[\/]')
-], sanitizer, upload.array('image'), dataController.uploadData);
-
-app.delete('/users/:id/data/:name', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6}),
-  check('data_name').trim().blacklist('\\')
-], sanitizer, dataController.deleteData);
+app.get('/users/:id/data', authMiddleware, sanitizer, dataController.viewDataset);
+app.post('/users/:id/data', authMiddleware, sanitizer, directoryMiddleware, dataController.addDataset);
+app.post('/users/:id/data/:name', authMiddleware, sanitizer, upload.any(), dataController.uploadImage);
+app.delete('/users/:id/data/:name', authMiddleware, sanitizer, dataController.deleteDataset);
 
 //jsonController - updateJSON per 5sec
 app.put('/board', authMiddleware, jsonController.updateJSON);
 
 //modelControllers
-app.post('/board/train', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6}),
-  check('project_name').trim().blacklist('\\'),
-  check('dataset_name').trim().blacklist('\\')
-], sanitizer, modelMiddleware, modelController.trainModel);
-app.post('/board/test', authMiddleware, [
-  check('id').trim().blacklist('\\').isLength({min : 6}),
-  check('project_name').trim().blacklist('\\'),
-  check('dataset_name').trim().blacklist('\\')
-], sanitizer, modelMiddleware, modelController.testModel);
+app.post('/board/train', authMiddleware, sanitizer, modelMiddleware, modelController.trainModel);
+app.post('/board/test', authMiddleware, sanitizer, modelMiddleware, modelController.testModel);
+
 
 // Listen
 app.listen(process.env.PORT || 8000, function () {

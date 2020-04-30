@@ -2,11 +2,15 @@ let fs      = require('fs');
 let multer  = require("multer");
 
 module.exports = {
-    viewData(req, res){
+    viewDataset(req, res){
         console.log("viewData");
     },
 
-    uploadData(req ,res){
+    addDataset(req, res){
+
+    },
+
+    uploadImage(req ,res){
         //data 업로드
         console.log("uploadData");
         var imgFile = req.files;
@@ -14,7 +18,7 @@ module.exports = {
 
     },
 
-    deleteData(req, res){
+    deleteDataset(req, res){
         console.log("deleteData");
     }
 };
