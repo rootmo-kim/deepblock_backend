@@ -17,31 +17,73 @@ module.exports = {
         const hashId = crypto.createHash(hash).update(req.body.user_name + salt).digest("hex");
         const hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
 
-        models.User.create({
-            user_name: req.body.user_name,
-            email: req.body.email,
-            password: hashPassword
+        models.User.findOne({
+            where : {
+                user_name: req.body.user_name
+            } 
         })
-        .then(() => {
-            //개인 디렉토리 생성 //Todo: 개인 디렉토리 생성시 프로젝트, 데이터셋 디렉토리 생성
-            fs.mkdirSync(path.normalize(`${base_path}/${hashId}`));
-            fs.mkdir(path.normalize(`${base_path}/${hashId}/${project_dir_name}`), ((err)=>{
-                console.log(err);
-            }));
-            fs.mkdir(path.normalize(`${base_path}/${hashId}/${data_dir_name}`), ((err)=>{
-                console.log(err);
-            }));
-
-            res.status(200).json({
-                success : "true",
-                message: "회원가입 성공"
-            })
+        .then((user)=>{
+            if(user){
+                res.status(500).json({
+                    seccess : "false",
+                    massage : "중복된 아이디 입니다."
+                })
+            }else{
+                models.User.create({
+                    user_name: req.body.user_name,
+                    email: req.body.email,
+                    password: hashPassword
+                })
+                .then(() => {
+                    fs.mkdir(path.normalize(`${base_path}/${hashId}`), ((err) => {
+                        if(err){
+                            if(err){
+                                res.status(500).json({
+                                    success : 'false',
+                                    message: "회원가입 실패"
+                                })
+                            }
+                        }else{
+                            fs.mkdir(path.normalize(`${base_path}/${hashId}/${project_dir_name}`), ((err)=>{
+                                if(err){
+                                    rimraf.sync(path.normalize(`${base_path}/${hashId}`));
+                                    res.status(500).json({
+                                        success : 'false',
+                                        message: "회원가입 실패"
+                                    })
+                                }else{
+                                    fs.mkdir(path.normalize(`${base_path}/${hashId}/${data_dir_name}`), ((err)=>{
+                                        if(err){
+                                            rimraf.sync(path.normalize(`${base_path}/${hashId}`));
+                                            res.status(500).json({
+                                                success : 'false',
+                                                message: "회원가입 실패"
+                                            })
+                                        }
+                                    }));
+                                }
+                            }));
+                        }
+                    }));
+                    
+                    res.status(200).json({
+                        success : "true",
+                        message: "회원가입 성공"
+                    })
+                })
+                .catch((error) => {
+                    console.log(error);
+                    res.status(500).json({
+                        success : 'false',
+                        message: "회원가입 실패"
+                    })
+                })
+            }
         })
-        .catch((error) => {
-            console.log(error);
+        .catch((err) => {
             res.status(500).json({
-                success : 'false',
-                message: "중복된 아이디 입니다"
+                seccess : "false",
+                massage : "회원가입 실패"
             })
         })
     },
@@ -50,25 +92,47 @@ module.exports = {
         const hashId = crypto.createHash(hash).update(req.body.user_name + salt).digest("hex");
         const hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
 
-        models.User.destroy({
-            where:{
-                password : hashPassword,
-                user_name: req.body.user_name
-            }
+        models.User.findOne({
+            where : {
+                user_name: req.body.user_name,
+                password : hashPassword
+            } 
         })
-        .then(() => {
-            rimraf.sync(`${base_path}/${hashId}`);
-            res.status(200).json({
-                success : 'true',
-                message : "회원탈퇴 성공"
-            })
+        .then((user) => {
+            if(user){
+                models.User.destroy({
+                    where:{
+                        user_name: req.body.user_name,
+                        password : hashPassword
+                    }
+                })
+                .then(() => {
+                    rimraf.sync(`${base_path}/${hashId}`);
+                    res.status(200).json({
+                        success : 'true',
+                        message : "회원탈퇴 성공"
+                    })
+                })
+                .catch(() => {
+                    res.status(500).json({
+                        success : 'false',
+                        message : "회원탈퇴 실패"
+                    })
+                })
+            }else{
+                res.status(500).json({
+                    success : 'false',
+                    message : "아이디 또는 비밀번호를 잘 못 입력하셨습니다."
+                })
+            }
         })
         .catch(() => {
             res.status(500).json({
                 success : 'false',
-                message : "회원탈퇴 실패(정보가 틀림)"
+                message : "회원탈퇴 실패"
             })
         })
+
     },
 
     login(req, res){
@@ -88,6 +152,7 @@ module.exports = {
                     message: "아이디 또는 비밀번호를 잘 못 입력하셨습니다."
                 })
             } else {
+                //Issue : session
                 req.session.user_name = req.body.user_name;
                 res.clearCookie('sid');
                 res.status(200).json({
@@ -106,7 +171,7 @@ module.exports = {
 
     logout(req, res){
         //로그아웃
-        //TODO
+        //TODO 
         //Coment : authMiddleware 구현 후 테스트 가능하니 authMiddleware 구현 빠르게 해야함
         req.session.destroy(() => {
             req.session;
