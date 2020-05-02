@@ -3,10 +3,10 @@ const fs = require('fs');
 const rimraf = require('rimraf');
 
 const models = require("../models");
-const salt = require('../config/config').salt;
-const base_path = require('../config/config').base_path;
-const hash = require('../config/config').hash;
-const data_dir_name = require('../config/config').datasets;
+const salt = require('../config/configs').salt;
+const base_path = require('../config/configs').base_path;
+const hash = require('../config/configs').hash;
+const data_dir_name = require('../config/configs').datasets;
 
 module.exports = {
     viewDataset(req, res){
@@ -41,7 +41,7 @@ module.exports = {
         })
     },
 
-    addDataset(req, res){
+    createDataset(req, res){
         const hashId = crypto.createHash(hash).update(req.params.id + salt).digest("hex");
         const dataset_path = `${base_path}/${hashId}/${data_dir_name}/${req.body.dataset_name}`;
 
@@ -122,15 +122,11 @@ module.exports = {
         })
     },
 
-    uploadImage(req ,res){
-        //data 업로드
-        console.log("uploadData");
-        var imgFile = req.files;
-        console.log(imgFile);
-
+    updateDataset(req, res){
+        
     },
 
-    deleteImage(req, res){
-
+    loadDataset(req, res){
+        
     }
 };

@@ -1,4 +1,5 @@
 // modules
+require('dotenv').config();
 let express = require('express');
 let bodyParser = require('body-parser');
 let sequelize = require('./models').sequelize;
@@ -12,16 +13,17 @@ let userController = require('./controllers/userController');
 let projectController = require('./controllers/projectController');
 let modelController = require('./controllers/modelController');
 let dataController = require('./controllers/dataController');
-let jsonController = require('./controllers/jsonController');
+let classController = require('./controllers/classController');
+let imageController = require ('./controllers/imageController');
 
 // middlewares
 let authMiddleware = require('./middlewares/author');
 let directoryMiddleware = require('./middlewares/directory').diretoryMiddleware;
 let sanitizer = require('./middlewares/sanitizer');
 
-let base_path = require('./config/config').base_path;
-const project_dir_name = require('./config/config').projects;
-const data_dir_name = require('./config/config').datasets;
+let base_path = require('./config/configs').base_path;
+const project_dir_name = require('./config/configs').projects;
+const data_dir_name = require('./config/configs').datasets;
 
 // Init Express
 var app = express();
@@ -41,10 +43,8 @@ app.use(session({
 app.use(bodyParser.json());
 
 // Init DB squelizer
-sequelize.sync().then( () => {
-  console.log(" DB 연결 성공");
-}).catch(err => {
-  console.log(err);
+sequelize.sync().then(() => {
+  console.log(" DB 연결 성공")
 });
 
 // Init multer
@@ -64,11 +64,6 @@ var upload = multer({storage : storage});
 /*
   Request API
 */
-////////// for test ///////// 
-app.post('/upload/:id/data/:name/test1', directoryMiddleware, dataController.addDataset);//upload.array('image'), dataController.uploadData);
-app.post('/upload/:id/data/:name/test2', upload.any(), dataController.uploadImage);
-/////////////////////////////
-
 app.get('/', function (req, res, next) {
   res.status(200).send('Hello world!');
   //res.status(404);
@@ -81,33 +76,38 @@ app.post('/logout', authMiddleware,userController.logout);
 app.post('/unregister', authMiddleware, sanitizer, userController.unregister);
 
 //projectControllers
-app.get('/users/:id/projects', authMiddleware, sanitizer, projectController.viewProject);
-app.post('/users/:id/projects', authMiddleware, sanitizer, projectController.createProject);
-app.delete('/users/:id/projects', authMiddleware, sanitizer, projectController.deleteProject);
+app.get('/:id/projects', authMiddleware, sanitizer, projectController.viewProject);
+app.post('/:id/projects', authMiddleware, sanitizer, projectController.createProject);
+app.delete('/:id/projects/:project-id', authMiddleware, sanitizer, projectController.deleteProject);
+app.put('/:id/projects/:project-id', authMiddleware, sanitizer, projectController.updateProject);
 
 //load project
-app.get('/users/:id/projects/:name', authMiddleware, sanitizer, projectController.loadProject);
-
-//dataControllers - dataset
-app.get('/users/:id/dataset', authMiddleware, sanitizer, dataController.viewDataset);
-app.post('/users/:id/dataset', authMiddleware, sanitizer, dataController.addDataset);
-app.delete('/users/:id/dataset', authMiddleware, sanitizer, dataController.deleteDataset);
-
-//dataControllers - data
-app.post('/users/:id/dataset/:name', authMiddleware, sanitizer, upload.any(), dataController.uploadImage);
-app.delete('/users/:id/dataset/:name', authMiddleware, sanitizer, dataController.deleteImage);
-
-//jsonController - updateJSON per 5sec
-app.put('/board', authMiddleware, jsonController.updateJSON);
+app.get('/:id/projects/:project-id', authMiddleware, sanitizer, projectController.loadProject);
 
 //modelControllers
-app.post('/board/train', authMiddleware, sanitizer, modelController.trainModel);
-app.post('/board/test', authMiddleware, sanitizer, modelController.testModel);
+app.put('/:id/projects/:project-id', authMiddleware, sanitizer, modelController.updateModel);
+app.post('/:id/projects/:project-id/train', authMiddleware, sanitizer, modelController.trainModel);
+app.post('/:id/projects/:/project-id/test', authMiddleware, sanitizer, modelController.testModel);
 
-app.get('/test/:id', ((req, res)=>{
-  console.log(req.query.id);
-  console.log(req.params.id);
-}))
+//dataControllers
+app.get('/:id/dataset', authMiddleware, sanitizer, dataController.viewDataset);
+app.post('/:id/dataset', authMiddleware, sanitizer, dataController.createDataset);
+app.delete('/:id/dataset/:dataset-id', authMiddleware, sanitizer, dataController.deleteDataset);
+app.put('/:id/dataset/:dataset-id', authMiddleware, sanitizer, dataController.updateDataset);
+
+//load dataset
+app.get('/:id/dataset/:dataset-id', authMiddleware, sanitizer, dataController.loadDataset);
+
+//classController
+app.get('/:id/dataset/:dataset-id', authMiddleware, sanitizer, classController.viewClass);
+app.post('/:id/dataset/:dataset-id', authMiddleware, sanitizer, classController.createClass);
+app.delete('/:id/dataset/:dataset-id/class', authMiddleware, sanitizer, classController.deleteClass);
+app.put('/:id/dataset/:dataset-id/class', authMiddleware, sanitizer, classController.updateClass);
+
+//imageController
+app.post('/:id/dataset/:dataset-id/class/:class-id', authMiddleware, sanitizer, upload.any(), imageController.uploadImage);
+app.delete('/:id/dataset/:dataset-id/class/:class-id', authMiddleware, sanitizer, imageController.deleteImage);
+
 
 // Listen
 app.listen(process.env.PORT || 8000, function () {

@@ -2,18 +2,22 @@ let fs      = require('fs');
 let tf      = require("@tensorflow/tfjs-node");
 let path    = require("path");
 
-let data_loader   = require("./dataLoader");
-const salt = require('../config/config').salt;
-const base_path = require('../config/config').base_path;
-const hash = require('../config/config').hash;
-const project_dir_name = require('../config/config').projects;
-const data_dir_name = require('../config/config').datasets;
+let data_loader   = require("./imageLoader");
+const salt = require('../config/configs').salt;
+const base_path = require('../config/configs').base_path;
+const hash = require('../config/configs').hash;
+const project_dir_name = require('../config/configs').projects;
+const data_dir_name = require('../config/configs').datasets;
 
 //삭제 예정 //TODO : DB에서 json 경로 질의
 let proj    = require("../public/json/model_info.json");
 
 
 module.exports = {
+    updateModel(req, res){
+        
+    },
+
     async trainModel(req, res){
         let history;
         let model;
