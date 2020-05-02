@@ -117,6 +117,7 @@ dist
 .vs
 
 #database
-config/config.json
+config/configs.js
 
+#for test
 test/

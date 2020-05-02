@@ -3,10 +3,10 @@ const fs = require('fs');
 const rimraf = require('rimraf');
 
 const models = require("../models");
-const salt = require('../config/config').salt;
-const base_path = require('../config/config').base_path;
-const hash = require('../config/config').hash;
-const project_dir_name = require('../config/config').projects;
+const salt = require('../config/configs').salt;
+const base_path = require('../config/configs').base_path;
+const hash = require('../config/configs').hash;
+const project_dir_name = require('../config/configs').projects;
 
 module.exports = {
     viewProject(req, res){
@@ -121,6 +121,14 @@ module.exports = {
                 message: "프로젝트 삭제 실패"
             })
         })
+    },
+
+
+    updateProject(req, res){
+        const hashId = crypto.createHash(hash).update(req.params.id + salt).digest("hex");
+        const proj_path = `${base_path}/${hashId}/${project_dir_name}/${req.body.project_name}`;
+        const before = req.body.before;
+        const after = req.body.after;
     },
 
     loadProject(req, res){
