@@ -7,9 +7,10 @@ const salt = require('../config/configs').salt;
 const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
 const data_dir_name = require('../config/configs').datasets;
+const res_handler = require('./responeHandler');
 
 module.exports = {
-    viewDataset(req, res){
+    viewDatasetList(req, res){
         models.Dataset.findAll({
             where : {
                 fk_user_id : req.params.id,
@@ -122,7 +123,7 @@ module.exports = {
         })
     },
 
-    updateDataset(req, res){
+    updateDatasetName(req, res){
         
     },
 

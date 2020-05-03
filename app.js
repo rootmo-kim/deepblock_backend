@@ -12,9 +12,8 @@ let {check, validationResult} = require('express-validator');
 let userController = require('./controllers/userController');
 let projectController = require('./controllers/projectController');
 let modelController = require('./controllers/modelController');
-let dataController = require('./controllers/dataController');
+let datasetController = require('./controllers/datasetController');
 let classController = require('./controllers/classController');
-let imageController = require ('./controllers/imageController');
 
 // middlewares
 let authMiddleware = require('./middlewares/author');
@@ -24,6 +23,7 @@ let sanitizer = require('./middlewares/sanitizer');
 let base_path = require('./config/configs').base_path;
 const project_dir_name = require('./config/configs').projects;
 const data_dir_name = require('./config/configs').datasets;
+const res_handler = require('./controllers/responeHandler');
 
 // Init Express
 var app = express();
@@ -66,47 +66,49 @@ var upload = multer({storage : storage});
 */
 app.get('/', function (req, res, next) {
   res.status(200).send('Hello world!');
-  //res.status(404);
 });
 
 //userControllers
 app.post('/register', sanitizer, userController.register);
 app.post('/login' , sanitizer, userController.login);
-app.post('/logout', authMiddleware,userController.logout);
+app.post('/logout', authMiddleware, userController.logout);
 app.post('/unregister', authMiddleware, sanitizer, userController.unregister);
+app.post('/findid', sanitizer, userController.findID);
+app.post('/findpasswd', sanitizer, userController.findPassword);
+app.put('/:id/passwd', authMiddleware, sanitizer, userController.changePassword);
 
 //projectControllers
-app.get('/:id/projects', authMiddleware, sanitizer, projectController.viewProject);
+app.get('/:id/projects', authMiddleware, sanitizer, projectController.viewProjectList);
 app.post('/:id/projects', authMiddleware, sanitizer, projectController.createProject);
-app.delete('/:id/projects/:project-id', authMiddleware, sanitizer, projectController.deleteProject);
-app.put('/:id/projects/:project-id', authMiddleware, sanitizer, projectController.updateProject);
+app.delete('/:id/projects/:project_id', authMiddleware, sanitizer, projectController.deleteProject);
+app.put('/:id/projects/:project_id', authMiddleware, sanitizer, projectController.updateProjectName);
 
 //load project
-app.get('/:id/projects/:project-id', authMiddleware, sanitizer, projectController.loadProject);
+app.get('/:id/projects/:project_id', authMiddleware, sanitizer, projectController.loadProject);
 
 //modelControllers
-app.put('/:id/projects/:project-id', authMiddleware, sanitizer, modelController.updateModel);
-app.post('/:id/projects/:project-id/train', authMiddleware, sanitizer, modelController.trainModel);
-app.post('/:id/projects/:/project-id/test', authMiddleware, sanitizer, modelController.testModel);
+app.put('/:id/projects/:project_id', authMiddleware, sanitizer, modelController.updateModel);
+app.post('/:id/projects/:project_id/train', authMiddleware, sanitizer, modelController.trainModel);
+app.post('/:id/projects/:/project_id/test', authMiddleware, sanitizer, modelController.testModel);
 
 //dataControllers
-app.get('/:id/dataset', authMiddleware, sanitizer, dataController.viewDataset);
-app.post('/:id/dataset', authMiddleware, sanitizer, dataController.createDataset);
-app.delete('/:id/dataset/:dataset-id', authMiddleware, sanitizer, dataController.deleteDataset);
-app.put('/:id/dataset/:dataset-id', authMiddleware, sanitizer, dataController.updateDataset);
+app.get('/:id/dataset', authMiddleware, sanitizer, datasetController.viewDatasetList);
+app.post('/:id/dataset', authMiddleware, sanitizer, datasetController.createDataset);
+app.delete('/:id/dataset/:dataset_id', authMiddleware, sanitizer, datasetController.deleteDataset);
+app.put('/:id/dataset/:dataset_id', authMiddleware, sanitizer, datasetController.updateDatasetName);
 
 //load dataset
-app.get('/:id/dataset/:dataset-id', authMiddleware, sanitizer, dataController.loadDataset);
+app.get('/:id/dataset/:dataset_id', authMiddleware, sanitizer, datasetController.loadDataset);
 
 //classController
-app.get('/:id/dataset/:dataset-id', authMiddleware, sanitizer, classController.viewClass);
-app.post('/:id/dataset/:dataset-id', authMiddleware, sanitizer, classController.createClass);
-app.delete('/:id/dataset/:dataset-id/class', authMiddleware, sanitizer, classController.deleteClass);
-app.put('/:id/dataset/:dataset-id/class', authMiddleware, sanitizer, classController.updateClass);
+app.get('/:id/dataset/:dataset_id/class', authMiddleware, sanitizer, classController.viewClassList);
+app.post('/:id/dataset/:dataset_id/class', authMiddleware, sanitizer, classController.createClass);
+app.delete('/:id/dataset/:dataset_id/class/:class_id', authMiddleware, sanitizer, classController.deleteClass);
+app.put('/:id/dataset/:dataset_id/class/:class_id', authMiddleware, sanitizer, classController.updateClassName);
 
 //imageController
-app.post('/:id/dataset/:dataset-id/class/:class-id', authMiddleware, sanitizer, upload.any(), imageController.uploadImage);
-app.delete('/:id/dataset/:dataset-id/class/:class-id', authMiddleware, sanitizer, imageController.deleteImage);
+app.post('/:id/dataset/:dataset_id/class/:class_id/image', authMiddleware, sanitizer, upload.any(), classController.uploadImage);
+app.delete('/:id/dataset/:dataset_id/class/:class_id/image', authMiddleware, sanitizer, classController.deleteImage);
 
 
 // Listen

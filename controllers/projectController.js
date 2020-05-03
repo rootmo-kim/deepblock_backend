@@ -7,9 +7,10 @@ const salt = require('../config/configs').salt;
 const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
 const project_dir_name = require('../config/configs').projects;
+const res_handler = require('./responeHandler');
 
 module.exports = {
-    viewProject(req, res){
+    viewProjectList(req, res){
         models.Project.findAll({
             where : {
                 fk_user_id : req.params.id,
@@ -124,7 +125,7 @@ module.exports = {
     },
 
 
-    updateProject(req, res){
+    updateProjectName(req, res){
         const hashId = crypto.createHash(hash).update(req.params.id + salt).digest("hex");
         const proj_path = `${base_path}/${hashId}/${project_dir_name}/${req.body.project_name}`;
         const before = req.body.before;
