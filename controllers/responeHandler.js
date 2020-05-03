@@ -1,46 +1,108 @@
 
 module.exports = {
+    /*
+        non-blocking respone handler
+    */
     //success
-    res_success_200(res, msg){
+    resSuccess200(res, msg){
         res.status(200).json({
             result : "true",
             massage : msg
-        })  ; 
+        }); 
     },
 
-    res_success_201(res, msg){
+    resSuccess201(res, msg){
         res.status(201).json({
             result : "true",
             massage : msg
-        })  ; 
+        }); 
     },
 
     //failed
-    res_failed_400(res, msg){
+    resFail400(res, msg){
         res.status(400).json({
             result : "false",
             massage : msg
-        })  ; 
+        }); 
     },
 
-    res_failed_404(res, msg){
+    resFail404(res, msg){
         res.status(404).json({
             result : "false",
             massage : msg
-        })  ; 
+        }); 
     },
 
-    res_failed_500(res, msg){
+    resFail500(res, msg){
         res.status(500).json({
             result : "false",
             massage : msg
-        })  ; 
+        }); 
     },
 
-    res_custom(res, status_num, result_bool, msg){
-        res.status(status_num).json({
-            result : result_bool,
-            massage : msg
-        })  ; 
+    resCustom(res, status_num, custom_json){
+        res.status(status_num).json(custom_json); 
+    },
+
+    /*
+        async respone handler
+    */
+    //success
+    async syncResSuccess200(res, msg){
+        return new Promise((resolve) => {
+            res.status(200).json({
+                result : "true",
+                massage : msg
+            });
+            resolve(); 
+        })
+    },
+
+    async syncResSuccess201(res, msg){
+        return new Promise((resolve) => {
+            res.status(201).json({
+                result : "true",
+                massage : msg
+            });
+            resolve(); 
+        })
+    },
+
+    //failed
+    async syncResFail400(res, msg){
+        return new Promise((resolve) => {
+            res.status(400).json({
+                result : "false",
+                massage : msg
+            });
+            resolve(); 
+        })
+    },
+
+    async syncResFail404(res, msg){
+        return new Promise((resolve) => {
+            res.status(404).json({
+                result : "false",
+                massage : msg
+            });
+            resolve(); 
+        })
+    },
+
+    async syncResFail500(res, msg){
+        return new Promise((resolve) => {
+            res.status(500).json({
+                result : "false",
+                massage : msg
+            });
+            resolve(); 
+        })
+    },
+
+    async syncResCustom(res, status_num, custom_json){
+        return new Promise((resolve) => {
+            res.status(status_num).json(custom_json);
+            resolve(); 
+        })
     }
 }
