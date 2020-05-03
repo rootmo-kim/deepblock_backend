@@ -4,11 +4,11 @@ const rimraf = require('rimraf');
 const path = require('path');
 
 const models = require("../models");
-const salt = require('../config/config').salt;
-const base_path = require('../config/config').base_path;
-const hash = require('../config/config').hash;
-const project_dir_name = require('../config/config').projects;
-const data_dir_name = require('../config/config').datasets;
+const salt = require('../config/configs').salt;
+const base_path = require('../config/configs').base_path;
+const hash = require('../config/configs').hash;
+const project_dir_name = require('../config/configs').projects;
+const data_dir_name = require('../config/configs').datasets;
 const res_handler = require('./responeHandler');
 
 module.exports = {
