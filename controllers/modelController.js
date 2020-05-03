@@ -8,6 +8,7 @@ const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
 const project_dir_name = require('../config/configs').projects;
 const data_dir_name = require('../config/configs').datasets;
+const res_handler = require('./responeHandler');
 
 //삭제 예정 //TODO : DB에서 json 경로 질의
 let proj    = require("../public/json/model_info.json");

@@ -9,7 +9,7 @@ const base_path = require('../config/config').base_path;
 const hash = require('../config/config').hash;
 const project_dir_name = require('../config/config').projects;
 const data_dir_name = require('../config/config').datasets;
-
+const res_handler = require('./responeHandler');
 
 module.exports = {
     register(req, res){
@@ -29,7 +29,7 @@ module.exports = {
                     massage : "중복된 아이디 입니다."
                 })
             }else{
-                models.User.create({
+               models.User.create({
                     user_name: req.body.user_name,
                     email: req.body.email,
                     password: hashPassword
@@ -59,13 +59,14 @@ module.exports = {
                                                 success : 'false',
                                                 message: "회원가입 실패"
                                             })
+                                        }else{
+
                                         }
                                     }));
                                 }
                             }));
                         }
                     }));
-                    
                     res.status(200).json({
                         success : "true",
                         message: "회원가입 성공"
@@ -182,4 +183,16 @@ module.exports = {
             message : "로그아웃 성공"
         });
     },
+
+    findID(req, res){
+        
+    },
+
+    findPassword(req, res){
+
+    },
+
+    changePassword(req, res){
+        
+    }
 };
