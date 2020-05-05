@@ -14,5 +14,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING
     }
   }, {});
+  Class.associate = function(models){
+    models.Class.hasMany(models.Image,{
+      foreignKey: 'fk_class_id',
+      onDelete: 'cascade',
+    })
+  }
   return Class;
 };

@@ -11,18 +11,19 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING
     },
     email: {
+      unique: true,
       allowNull: false,
       type: DataTypes.STRING
     },
-    email_verification: {
-      type: DataTypes.BOOLEAN,
+    is_verify: {
       required: true,
-      defaultValue: false
+      defaultValue: false,
+      type: DataTypes.BOOLEAN
     },
-    key_verification: {
-      type: DataTypes.STRING,
+    verify_key: {
+      required: true,
       allowNull: false,
-      required: true
+      type: DataTypes.STRING
     },
   }, {});
   User.associate = function(models) {

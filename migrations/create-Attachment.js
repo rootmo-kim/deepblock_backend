@@ -1,35 +1,21 @@
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('Users', {
-      user_id: {
+    return queryInterface.createTable('Attachments', {
+      file_id: {
         allowNull: false,
         primaryKey: true,
         autoIncrement: true,
         type: Sequelize.INTEGER
       },
-      username: {
-        allowNull: false,
-        type: Sequelize.STRING,
-      },
-      password: {
-        allowNull: false,
-        type: Sequelize.STRING
-      },
-      email: {
+      hash: {
         unique: true,
         allowNull: false,
         type: Sequelize.STRING
       },
-      is_verify: {
-        required: true,
-        defaultValue: false,
-        type: DataTypes.BOOLEAN
-      },
-      verify_key: {
-        required: true,
+      path: {
         allowNull: false,
-        type: DataTypes.STRING
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,
@@ -42,6 +28,6 @@ module.exports = {
     });
   },
   down: (queryInterface, Sequelize) => {
-    return queryInterface.dropTable('Users');
+    return queryInterface.dropTable('Attachments');
   }
 };
