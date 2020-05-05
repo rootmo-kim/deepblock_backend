@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       type: DataTypes.STRING
     },
-    path: {
+    project_path: {
       allowNull: false,
       type: DataTypes.STRING
     }

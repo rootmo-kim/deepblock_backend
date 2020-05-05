@@ -28,17 +28,11 @@ module.exports = {
                     proj_arr : proj_arr
                 })
             }else{
-                res.status(200).json({
-                    success : 'true',
-                    massege : '생성된 프로젝트가 없습니다.'
-                })
+                res_handler.resSuccess200(res, "생성된 프로젝트가 없습니다.");
             }
         })
         .catch((err) => {
-            res.status(500).json({
-                success : 'false',
-                massege : '프로젝트 검색 실패'
-            })
+            res_handler.resFail500("프로젝트 검색 실패");
         })
     },
 
