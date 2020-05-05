@@ -121,3 +121,6 @@ config/configs.js
 
 #for test
 test/
+controllers/testController.js
+middlewares/sanitizerTest.js
+./test.http
