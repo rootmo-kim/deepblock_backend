@@ -75,7 +75,7 @@ app.post('/login' , sanitizer, userController.login);
 app.post('/logout', authMiddleware, userController.logout);
 app.post('/unregister', authMiddleware, sanitizer, userController.unregister);
 app.post('/findid', sanitizer, userController.findID);
-app.post('/findpasswd', sanitizer, userController.findPassword);
+app.put('/findpasswd', sanitizer, userController.findPassword);
 app.put('/:id/passwd', authMiddleware, sanitizer, userController.changePassword);
 app.patch('/verifyemail', sanitizer, verification.verifyEmail);
 app.patch('/verifypasswd', sanitizer, verification.verifyPassword);
