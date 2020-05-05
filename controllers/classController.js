@@ -203,7 +203,7 @@ module.exports = {
         }catch(err){
             fs.access(after_class_path, fs.constants.F_OK, ((e)=>{
                 if(!e){
-                    awaitfsp.rename(after_class_path, before_class_path);
+                    fsp.rename(after_class_path, before_class_path);
                 }
                 transaction.rollback();
                 res_handler.syncResFail500(res, "처리 실패");
@@ -213,6 +213,7 @@ module.exports = {
 
     loadClass(req, res){
         //image 썸네일 보기
+        
     },
 
     uploadImage(req ,res){
@@ -229,7 +230,7 @@ module.exports = {
             })
         }
     },
-
+//
     deleteImage(req, res){
 
     },
