@@ -1,0 +1,54 @@
+POST http://localhost:8000/register 
+Content-Type: application/json
+
+{
+    "user_name":"22", 
+    "password":"22",   
+    "email":"rmsah12@naver.com"
+}
+
+###
+POST http://localhost:8000/login 
+Content-Type: application/json
+
+{"user_name":"33", "password":"33"}
+
+###
+POST http://localhost:8000/logout 
+Content-Type: application/json
+
+{"user_name":"11", "password":"11"}
+
+###
+POST http://localhost:8000/unregister 
+Content-Type: application/json
+
+{"user_name":"11", "password":"11"}
+
+###
+PATCH http://localhost:8000/verifyEmail?key=f6a261ca92f3afafffwSrzc0bPneeDCW
+Content-Type: application/json
+
+###
+PATCH http://localhost:8000/verifyPasswd?key=443dcea17766f7ddG7wN0iNbc86wygV5
+
+{"password":"22"}
+
+###
+POST http://localhost:8000/findid
+Content-Type: application/json
+
+{"email":"rmsah12@naver.com"}
+
+###
+PUT http://localhost:8000/findpasswd
+Content-Type: application/json
+
+{"user_name":"11", "email":"rmsah12@naver.com"}
+
+
+###
+PUT http://localhost:8000/11/passwd
+Content-Type: application/json
+
+{"email":"rmsah12@naver.com", "password":"22"}

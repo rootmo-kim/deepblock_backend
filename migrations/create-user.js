@@ -20,6 +20,16 @@ module.exports = {
         allowNull: false,
         type: Sequelize.STRING
       },
+      email_verification: {
+        type: DataTypes.BOOLEAN,
+        required: true,
+        defaultValue: false
+      },
+      key_verification: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        required: true
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

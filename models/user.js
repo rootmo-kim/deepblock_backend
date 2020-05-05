@@ -13,7 +13,17 @@ module.exports = (sequelize, DataTypes) => {
     email: {
       allowNull: false,
       type: DataTypes.STRING
-    }
+    },
+    email_verification: {
+      type: DataTypes.BOOLEAN,
+      required: true,
+      defaultValue: false
+    },
+    key_verification: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      required: true
+    },
   }, {});
   User.associate = function(models) {
     models.User.hasMany(models.Project,{
