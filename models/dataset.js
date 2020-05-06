@@ -4,6 +4,10 @@ module.exports = (sequelize, DataTypes) => {
     dataset_name: {
       allowNull: false,
       type: DataTypes.STRING
+    },
+    dataset_path: {
+      allowNull: false,
+      type: DataTypes.STRING
     }
   }, {});
   Dataset.associate = function(models) {
