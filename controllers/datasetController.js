@@ -1,133 +1,213 @@
+'use strict';
+
 const crypto = require("crypto");
 const fs = require('fs');
+const fsp = require('fs').promises;
 const rimraf = require('rimraf');
 
 const models = require("../models");
 const salt = require('../config/configs').salt;
 const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
-const data_dir_name = require('../config/configs').datasets;
+const dataset_dir_name = require('../config/configs').datasets;
 const res_handler = require('./responeHandler');
 
 module.exports = {
-    viewDatasetList(req, res){
-        models.Dataset.findAll({
-            where : {
-                fk_user_id : req.params.id,
-            } 
-        })
-        .then((dataset) => {
-            if(proj.length != 0){
-                var dataset_arr = [];
-                for(var _dataset of dataset){
-                    dataset_arr.push({dataset_name : _dataset.dataValues.dataset_name});
+    async viewDatasetList(req, res){
+        try{
+            const dataset_info = await models.Dataset.findAll({
+                where : {
+                    fk_user_id : req.params.id, 
                 }
-                res.status(200).json({
-                    success : 'true',
-                    dataset_num : dataset_arr.length,
-                    dataset_arr : dataset_arr
-                })
+            });
+
+            if(!dataset_info.length){
+                res_handler.resCustom(res, 200, {
+                    "result" : "success",
+                    "dataset_num" : 0
+                });
             }else{
-                res.status(200).json({
-                    success : 'true',
-                    massege : '생성된 데이터셋이 없습니다.'
-                })
+                let dataset_arr = [];
+                for(var _dataset of dataset_info){
+                    _dataset = _dataset.dataValues;
+                    dataset_arr.push({
+                        dataset_id : _dataset.id, 
+                        dataset_name : _dataset.dataset_name, 
+                    });
+                }
+                res_handler.resCustom(res, 200, {
+                    "result" : "success",
+                    "dataset_num" : dataset_arr.length,
+                    "dataset_list" : dataset_arr
+                });
             }
-        })
-        .catch((err) => {
-            res.status(500).json({
-                success : 'false',
-                massege : '데이터셋 검색 실패'
-            })
-        })
+        }catch(err){
+            res_handler.syncResFail500(res, "처리 실패");
+        }
     },
 
-    createDataset(req, res){
-        const hashId = crypto.createHash(hash).update(req.params.id + salt).digest("hex");
-        const dataset_path = `${base_path}/${hashId}/${data_dir_name}/${req.body.dataset_name}`;
+    async createDataset(req, res){
+        let user_dataset_path; 
+        let transaction;
 
-        models.Dataset.findOne({
-            where : {
-                fk_user_id : req.params.id,
-                dataset_name : req.body.dataset_name
-            } 
-        })
-        .then((dataset) => {
-            if(dataset){
-                res.status(403).json({
-                    success : 'false',
-                    message : "중복된 데이터셋이름 입니다."
-                })
+        try{
+            transaction = await models.sequelize.transaction();
+            const user_dataset = await models.User.findOne({
+                include : [{
+                    model : models.Dataset,
+                    where : {dataset_name : req.body.dataset_name}
+                }],
+                where : {
+                    id : req.params.id,
+                }
+            });
+
+            if(user_dataset){
+                transaction.rollback();
+                res_handler.resFail400(res, "중복된 데이터셋명");
             }else{
-                models.Dataset.create({
+                const user = await models.User.findOne({where : {id : req.params.id}});
+                const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
+                user_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${req.body.dataset_name}`;
+    
+                await models.Dataset.create({
                     fk_user_id : req.params.id,
-                    dataset_name: req.body.dataset_name,
-                    path: dataset_path
-                })
-                .then(() => {
-                    fs.mkdir(dataset_path , (() => {
-                        res.status(500).json({
-                            success : "false",
-                            message: "데이터셋 생성 실패"
-                        })
-                    }));
-                    res.status(200).json({
-                        success : 'true',
-                        message: "데이터셋 생성 성공"
-                    })
-                })
-                .catch(() => {
-                    res.status(500).json({
-                        success : 'false',
-                        message: "데이터셋 생성 실패"
-                    })
-                })
+                    dataset_name : req.body.dataset_name,
+                    dataset_path : user_dataset_path
+                }, { 
+                    transaction 
+                });
+                await fsp.mkdir(user_dataset_path);
+                await transaction.commit();
+                await res_handler.syncResSuccess201(res, "dataset 생성 성공");
             }
-        }).catch(()=>{
-            res.status(500).json({
-                success : "false",
-                message: "데이터셋 생성 실패"
-            })
-        })
+        }catch(err){
+            if(user_dataset_path){
+                fs.access(user_dataset_path, fs.constants.F_OK, ((e)=>{
+                    if(!e){
+                        rimraf.sync(user_dataset_path);
+                    }
+                }));
+            }
+            transaction.rollback();
+            res_handler.syncResFail500(res, "처리 실패");
+        }
     },
 
-    deleteDataset(req, res){
-        const hashId = crypto.createHash(hash).update(req.params.id + salt).digest("hex");
-        const dataset_path = `${base_path}/${hashId}/${data_dir_name}/${req.body.dataset_name}`;
+    async deleteDataset(req, res){
+        let user_dataset_path; 
+        let transaction;
 
-        models.Dataset.destroy({
-            where : {
-                fk_user_id : req.params.id,
-                dataset_name : req.body.dataset_name
-            }
-        })
-        .then((dataset) => {
-            if(dataset){
-                rimraf.sync(dataset_path);
-                res.status(200).json({
-                    success : 'true',
-                    message: "데이터셋 삭제 성공"
-                })
+        try{
+            transaction = await models.sequelize.transaction();
+            const user_dataset = await models.User.findOne({
+                include : [{
+                    model : models.Dataset,
+                    where : {id : req.params.dataset_id}
+                }],
+                where : {
+                    id : req.params.id,
+                }
+            });
+
+            if(!user_dataset){
+                transaction.rollback();
+                res_handler.resFail400(res, "잘못 된 요청");
             }else{
-                res.status(500).json({
-                    success : 'false',
-                    message: "존재하지않는 데이터셋"
-                })
+                const hashId = crypto.createHash(hash).update(user_dataset.dataValues.username + salt).digest("hex");
+                const dataset_name = user_dataset.dataValues.Datasets[0].dataValues.dataset_name;
+                user_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${dataset_name}`;
+
+                await models.Dataset.destroy({
+                    where : {
+                        fk_user_id : req.params.id,
+                        id : req.params.dataset_id,
+                        dataset_name : dataset_name,
+                        dataset_path : user_dataset_path
+                    }
+                }, { 
+                    transaction 
+                });
+
+                rimraf.sync(user_dataset_path);
+                await transaction.commit();
+                await res_handler.syncResSuccess201(res, "dataset 삭제 성공");
             }
-        })
-        .catch(() => {
-            res.status(500).json({
-                success : "false",
-                message: "데이터셋 삭제 실패"
-            })
-        })
+        }catch(err){
+            console.log(err);
+            transaction.rollback();
+            res_handler.syncResFail500(res, "처리 실패");
+        }
     },
 
-    updateDatasetName(req, res){
-        
-    },
+    async updateDatasetName(req, res){
+        let before_dataset_path;
+        let after_dataset_path;
+        let transaction;
 
-    loadDataset(req, res){
-        
+        try{
+            transaction = await models.sequelize.transaction();
+
+            const before_dataset = await models.User.findOne({
+                include : [{
+                    model : models.Dataset, 
+                    where: {id : req.params.dataset_id}
+                }], 
+                where : {
+                    id : req.params.id
+                }
+            });
+            const after_dataset = await models.User.findOne({
+                include : [{
+                    model : models.Dataset, 
+                    where: {dataset_name : req.body.after}
+                }], 
+                where : {
+                    id : req.params.id
+                }
+            });
+
+            if(!before_dataset){
+                transaction.rollback();
+                res_handler.resFail400(res, "잘못 된 요청");
+            }else if(after_dataset){
+                transaction.rollback();
+                res_handler.resFail400(res, "중복된 데이터셋명");
+            }else{
+                const hashId = crypto.createHash(hash).update(before_dataset.dataValues.username + salt).digest("hex");
+                const before_dataset_name = before_dataset.dataValues.Datasets[0].dataValues.dataset_name;;
+                const after_dataset_name = req.body.after;
+
+                before_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${before_dataset_name}`;
+                after_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${after_dataset_name}`;
+
+                await models.Dataset.update({
+                    dataset_name : after_dataset_name,
+                    dataset_path : after_dataset_path
+                },{
+                    where : {
+                        fk_user_id : req.params.id,
+                        id : req.params.dataset_id,
+                        dataset_name : before_dataset_name,
+                        dataset_path : before_dataset_path
+                    }
+                }, { 
+                    transaction 
+                });
+                await fsp.rename(before_dataset_path, after_dataset_path);
+                await transaction.commit();
+                await res_handler.syncResSuccess201(res, "dataset 이름 변경성공");
+            }
+        }catch(err){
+            if(after_dataset_path){
+                fs.access(after_dataset_path, fs.constants.F_OK, ((e)=>{
+                    if(!e){
+                        fsp.rename(after_dataset_path, before_dataset_path);
+                    }
+                }));
+            }
+            transaction.rollback();
+            res_handler.syncResFail500(res, "처리 실패");
+        }
     }
 };

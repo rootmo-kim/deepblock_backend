@@ -47,14 +47,13 @@ module.exports = {
                     username: req.body.username,
                     email: req.body.email,
                     password: hashPassword,
-                    key_verification: hashKey
+                    verify_key: hashKey
                 })
                 .then(() => {
                     fs.mkdir(path.normalize(`${base_path}/${hashId}`), ((err) => {
                         if(err){
-                            if(err){
-                                res_handler.resFail400(res, "회원가입 실패");
-                            }
+                            console.log(err);
+                            res_handler.resFail400(res, "회원가입 실패");
                         }else{
                             let mailOptions = {
                                 from: "deepblock.developer@gmail.com",
@@ -89,6 +88,7 @@ module.exports = {
                     }));                
                 })
                 .catch((err) => {
+                    console.log(err);
                     res_handler.resFail500(res, "회원가입 실패");
                 })
             }

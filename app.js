@@ -14,11 +14,11 @@ let projectController = require('./controllers/projectController');
 let modelController = require('./controllers/modelController');
 let datasetController = require('./controllers/datasetController');
 let classController = require('./controllers/classController');
+let imageController = require('./controllers/imageController');
 
 // middlewares
 let verification = require('./middlewares/verification');
 let authMiddleware = require('./middlewares/author');
-let directoryMiddleware = require('./middlewares/directory').diretoryMiddleware;
 let sanitizer = require('./middlewares/sanitizer');
 
 let base_path = require('./config/configs').base_path;
@@ -86,11 +86,10 @@ app.post('/:id/projects', authMiddleware, sanitizer, projectController.createPro
 app.delete('/:id/projects/:project_id', authMiddleware, sanitizer, projectController.deleteProject);
 app.put('/:id/projects/:project_id', authMiddleware, sanitizer, projectController.updateProjectName);
 
-//load project
-app.get('/:id/projects/:project_id', authMiddleware, sanitizer, projectController.loadProject);
-
 //modelControllers
+app.get('/:id/projects/:project_id', authMiddleware, sanitizer, modelController.loadModelOfProject);
 app.put('/:id/projects/:project_id', authMiddleware, sanitizer, modelController.updateModel);
+//modelControllers - model train/test
 app.post('/:id/projects/:project_id/train', authMiddleware, sanitizer, modelController.trainModel);
 app.post('/:id/projects/:/project_id/test', authMiddleware, sanitizer, modelController.testModel);
 
@@ -100,18 +99,15 @@ app.post('/:id/dataset', authMiddleware, sanitizer, datasetController.createData
 app.delete('/:id/dataset/:dataset_id', authMiddleware, sanitizer, datasetController.deleteDataset);
 app.put('/:id/dataset/:dataset_id', authMiddleware, sanitizer, datasetController.updateDatasetName);
 
-//load dataset
-app.get('/:id/dataset/:dataset_id', authMiddleware, sanitizer, datasetController.loadDataset);
-
 //classController
-app.get('/:id/dataset/:dataset_id/class', authMiddleware, sanitizer, classController.viewClassList);
+app.get('/:id/dataset/:dataset_id/class', authMiddleware, sanitizer, classController.loadClassOfDataset);
 app.post('/:id/dataset/:dataset_id/class', authMiddleware, sanitizer, classController.createClass);
 app.delete('/:id/dataset/:dataset_id/class/:class_id', authMiddleware, sanitizer, classController.deleteClass);
 app.put('/:id/dataset/:dataset_id/class/:class_id', authMiddleware, sanitizer, classController.updateClassName);
 
-//imageController
-app.post('/:id/dataset/:dataset_id/class/:class_id/image', authMiddleware, sanitizer, upload.any(), classController.uploadImage);
-app.delete('/:id/dataset/:dataset_id/class/:class_id/image', authMiddleware, sanitizer, classController.deleteImage);
+app.get('/:id/dataset/:dataset_id/class/:class_id', authMiddleware, sanitizer, imageController.sendClassImage);
+app.post('/:id/dataset/:dataset_id/class/:class_id/image', authMiddleware, sanitizer, upload.any(), imageController.uploadImage);
+app.delete('/:id/dataset/:dataset_id/class/:class_id/image', authMiddleware, sanitizer, imageController.deleteImage);
 
 
 // Listen
