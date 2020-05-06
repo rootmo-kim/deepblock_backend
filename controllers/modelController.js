@@ -15,6 +15,11 @@ let proj    = require("../public/json/model_info.json");
 
 
 module.exports = {
+    loadModelOfProject(req, res){
+        console.log('loadProject');
+    },
+
+    // Run 5 per second when user see board-page
     updateModel(req, res){
         
     },
