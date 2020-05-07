@@ -2,6 +2,8 @@ const crypto = require("crypto");
 const fs = require('fs');
 const rimraf = require('rimraf');
 const path = require('path');
+const nodemailer = require('nodemailer');
+const smtpTransporter = require('nodemailer-smtp-transport');
 
 const models = require("../models");
 const salt = require('../config/configs').salt;
@@ -9,16 +11,16 @@ const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
 const project_dir_name = require('../config/configs').projects;
 const data_dir_name = require('../config/configs').datasets;
-const res_handler = require('./responeHandler');
-
-const nodemailer = require('nodemailer');
-const smtpTransporter = require('nodemailer-smtp-transport');
+const res_handler = require('../utils/responeHandler');
+const admin_email = require('../config/configs').admin_email;
+const admin_password = require('../config/configs').admin_password;
+const admin_email_service = require('../config/configs').admin_email_service;
 
 smtpTransport = nodemailer.createTransport(smtpTransporter({
-    service: "gmail",
+    service: admin_email_service,
     auth: {
-        user: "deepblock.developer@gmail.com",
-        pass: "1q2w3e4r1!"
+        user: admin_email,
+        pass: admin_password
     }
 }));
 

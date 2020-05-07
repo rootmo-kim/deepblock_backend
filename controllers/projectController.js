@@ -10,7 +10,7 @@ const salt = require('../config/configs').salt;
 const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
 const project_dir_name = require('../config/configs').projects;
-const res_handler = require('./responeHandler');
+const res_handler = require('../utils/responeHandler');
 
 module.exports = {
     async viewProjectList(req, res){
