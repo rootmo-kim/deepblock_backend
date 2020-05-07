@@ -1,4 +1,4 @@
-.vscode/
+
 
 # Logs
 logs
@@ -124,3 +124,4 @@ test/
 controllers/testController.js
 middlewares/sanitizerTest.js
 ./test.http
+/public

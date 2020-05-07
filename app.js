@@ -17,14 +17,14 @@ let classController = require('./controllers/classController');
 let imageController = require('./controllers/imageController');
 
 // middlewares
-let verification = require('./middlewares/verification');
-let authMiddleware = require('./middlewares/author');
+let verification = require('./middlewares/verifier');
+let authMiddleware = require('./middlewares/authenticator');
 let sanitizer = require('./middlewares/sanitizer');
 
 let base_path = require('./config/configs').base_path;
 const project_dir_name = require('./config/configs').projects;
 const data_dir_name = require('./config/configs').datasets;
-const res_handler = require('./controllers/responeHandler');
+const res_handler = require('./utils/responeHandler');
 
 // Init Express
 var app = express();
