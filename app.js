@@ -1,8 +1,10 @@
 // modules
+let redis = require('redis');
+let session = require('express-session');
+let redis_store = require('connect-redis')(session);
 let express = require('express');
 let bodyParser = require('body-parser');
 let sequelize = require('./models').sequelize;
-let session = require('express-session');
 let multer = require("multer");
 let path = require('path');
 let {check, validationResult} = require('express-validator');
@@ -16,7 +18,6 @@ let classController = require('./controllers/classController');
 let imageController = require('./controllers/imageController');
 
 // middlewares
-let verification = require('./middlewares/verifier');
 let authMiddleware = require('./middlewares/authenticator');
 let sanitizer = require('./middlewares/sanitizer');
 
@@ -29,16 +30,23 @@ const customStroage = require('./utils/customStorage');
 // Init Express
 var app = express();
 
-// Init Session
-app.use(session({
-  key: 'sid',
-  secret: 'secret',
-  resave: false,
-  saveUninitialized: true,
-  cookie: {
-    maxAge: 24000 * 60 * 60
-  }
-}));
+// redis 세션관리
+var redis_client = redis.createClient(6379, 'localhost');
+
+const sess = {
+    key: 'sid',
+    resave: false,
+    secret: 'secret',
+    saveUninitialized: true,
+    store: new redis_store({
+        client: redis_client
+    }),
+    cookie: {
+      maxAge: 24000 * 60 * 60
+    }
+};
+
+app.use(session(sess));
 
 // Set up body-parser with JSON
 app.use(bodyParser.json());
@@ -87,8 +95,8 @@ app.post('/unregister', authMiddleware, sanitizer, userController.unregister);
 app.post('/findid', sanitizer, userController.findID);
 app.put('/findpasswd', sanitizer, userController.findPassword);
 app.put('/:id/passwd', authMiddleware, sanitizer, userController.changePassword);
-app.patch('/verifyemail', sanitizer, verification.verifyEmail);
-app.patch('/verifypasswd', sanitizer, verification.verifyPassword);
+app.patch('/verifyemail', sanitizer, userController.verifyEmail);
+app.patch('/verifypasswd', sanitizer, userController.verifyPassword);
 
 //projectControllers
 app.get('/:id/projects', authMiddleware, sanitizer, projectController.viewProjectList);

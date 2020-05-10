@@ -11,10 +11,14 @@ const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
 const project_dir_name = require('../config/configs').projects;
 const data_dir_name = require('../config/configs').datasets;
-const res_handler = require('../utils/responseHandler');
 const admin_email = require('../config/configs').admin_email;
 const admin_password = require('../config/configs').admin_password;
 const admin_email_service = require('../config/configs').admin_email_service;
+const res_handler = require('../utils/responseHandler');
+
+let redis = require('redis');
+var redis_client = redis.createClient(6379, 'localhost');
+
 
 smtpTransport = nodemailer.createTransport(smtpTransporter({
     service: admin_email_service,
@@ -57,20 +61,6 @@ module.exports = {
                             console.log(err);
                             res_handler.resFail400(res, "회원가입 실패");
                         }else{
-                            let mailOptions = {
-                                from: "deepblock.developer@gmail.com",
-                                to: req.body.email,
-                                subject: "deepblock - 이메일 인증을 해주세요",
-                                html: "<h1>이메일 인증을 위해 URL을 클릭해주세요</h1>" + url
-                            };
-                            smtpTransport.sendMail(mailOptions, (err, info) => {
-                                if(err){
-                                    console.log(err);
-                                }else{
-                                    console.log("email sent");
-                                }
-                                smtpTransport.close();
-                            });
                             fs.mkdir(path.normalize(`${base_path}/${hashId}/${project_dir_name}`), ((err)=>{
                                 if(err){
                                     rimraf.sync(path.normalize(`${base_path}/${hashId}`));
@@ -81,6 +71,20 @@ module.exports = {
                                             rimraf.sync(path.normalize(`${base_path}/${hashId}`));
                                             res_handler.resFail400(res, "회원가입 실패");
                                         }else{
+                                            let mailOptions = {
+                                                from: "deepblock.developer@gmail.com",
+                                                to: req.body.email,
+                                                subject: "deepblock - 이메일 인증을 해주세요",
+                                                html: "<h1>이메일 인증을 위해 URL을 클릭해주세요</h1>" + url
+                                            };
+                                            smtpTransport.sendMail(mailOptions, (err, info) => {
+                                                if(err){
+                                                    console.log(err);
+                                                }else{
+                                                    console.log("email sent");
+                                                }
+                                                smtpTransport.close();
+                                            });
                                             res_handler.resSuccess200(res, "회원가입 성공");
                                         }
                                     }));
@@ -138,12 +142,13 @@ module.exports = {
     login(req, res){
         //로그인
         const hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
+        redis_client.set('log_' + new Date().getTime(), 'username: ' + req.session.username);
 
         models.User.findOne({
             where: {
                 username: req.body.username,
                 password: hashPassword,
-                email_verification: true
+                is_verify: true
             }
         })
         .then((user) => {
@@ -156,6 +161,7 @@ module.exports = {
             }       
         })
         .catch((err) =>{
+            console.log(err);
             res_handler.resFail500(res, "다시 시도해주세요");
         });
     },
@@ -164,11 +170,15 @@ module.exports = {
         //로그아웃
         //TODO 
         //Coment : authMiddleware 구현 후 테스트 가능하니 authMiddleware 구현 빠르게 해야함
-        req.session.destroy(() => {
-            req.session;
+        req.session.destroy((err) => {
+            if(err){
+                res_handler.resFail500(res, "로그아웃 실패");
+            }else{
+                //res.clearCookie('sid');
+                res.redirect('login');
+            }
+            //req.session.usernname;
         });
-        res.clearCookie('sid');
-        res_handler.resSuccess200(res, "로그아웃 성공");
     },
 
     findID(req, res){
@@ -269,7 +279,7 @@ module.exports = {
                 res_handler.resFail400(res, "등록된 이메일 또는 비밀번호가 아닙니다");
             }else{
                 models.User.update({
-                    email_verification: false, key_verification: hashKey},{
+                    is_verify: false, verify_key: hashKey},{
                     where: { 
                         email : user.dataValues.email
                     }    
@@ -298,6 +308,33 @@ module.exports = {
         .catch((err) => {
             console.log(err);
             res_handler. resFail500(res, "회원 정보 없음");
+        })
+    },
+    verifyEmail(req, res){
+        models.User.update({is_verify: true}, {where: {verify_key: req.query.key}})
+        .then((user) => {
+            if(!user[0]){
+                res_handler.resFail500(res, "인증키 오류");
+            }else{
+                res_handler.resSuccess200(res, "인증 성공 - 로그인 가능!");
+            }
+        })
+        .catch((err) => { 
+            res_handler.resFail500(res, "오류");
+        })
+    },
+    verifyPassword(req, res){
+        const hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
+        models.User.update({password: hashPassword, is_verify: true},{where: {verify_key: req.query.key}})
+        .then((user) => {
+            if(!user){
+                res_handler.resFail500(res, "인증키 오류");
+            }else{
+                res_handler.resSuccess200(res, "인증 성공 - 비밀번호 변경 완료!");
+            }
+        })
+        .catch((err) => {
+            res_handler.resFail500(res, "오류");
         })
     }
 };
