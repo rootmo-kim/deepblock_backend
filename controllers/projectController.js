@@ -17,7 +17,7 @@ module.exports = {
         try{
             const projects_info = await models.Project.findAll({
                 where : {
-                    fk_user_id : req.session.id, 
+                    fk_user_id : req.session.userid, 
                 }
             });
 
@@ -58,7 +58,7 @@ module.exports = {
                     where : {project_name : req.body.project_name}
                 }],
                 where : {
-                    id : req.session.id,
+                    id : req.session.userid,
                 }
             });
 
@@ -66,12 +66,12 @@ module.exports = {
                 transaction.rollback();
                 res_handler.resFail400(res, "중복된 프로젝트명");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.id}});
+                const user = await models.User.findOne({where : {id : req.session.userid}});
                 const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
                 user_project_path = `${base_path}/${hashId}/${project_dir_name}/${req.body.project_name}`;
     
                 await models.Project.create({
-                    fk_user_id : req.session.id,
+                    fk_user_id : req.session.userid,
                     project_name : req.body.project_name,
                     project_path : user_project_path
                 }, { 
@@ -106,7 +106,7 @@ module.exports = {
                     where : {id : req.params.project_id}
                 }],
                 where : {
-                    id : req.session.id,
+                    id : req.session.userid,
                 }
             });
 
@@ -120,7 +120,7 @@ module.exports = {
 
                 await models.Project.destroy({
                     where : {
-                        fk_user_id : req.session.id,
+                        fk_user_id : req.session.userid,
                         id : req.params.project_id,
                         project_name : project_name,
                         project_path : user_project_path
@@ -154,7 +154,7 @@ module.exports = {
                     where: {id : req.params.project_id}
                 }], 
                 where : {
-                    id : req.session.id
+                    id : req.session.userid
                 }
             });
             const after_project = await models.User.findOne({
@@ -163,7 +163,7 @@ module.exports = {
                     where: {project_name : req.body.after}
                 }], 
                 where : {
-                    id : req.session.id
+                    id : req.session.userid
                 }
             });
 
@@ -186,7 +186,7 @@ module.exports = {
                     project_path : after_project_path
                 },{
                     where : {
-                        fk_user_id : req.session.id,
+                        fk_user_id : req.session.userid,
                         id : req.params.project_id,
                         project_name : before_project_name,
                         project_path : before_project_path

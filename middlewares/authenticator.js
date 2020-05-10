@@ -3,7 +3,7 @@ const res_handler = require('../utils/responseHandler');
 const authenticator = (req, res, next) => {
     const p = new Promise(
         (resolve, reject) => {
-            if(req.session.id)
+            if(req.session.userid !== undefined || req.session.username !== undefined)
             {
                 resolve();
             }else{
@@ -12,7 +12,6 @@ const authenticator = (req, res, next) => {
         }
     )
     p.then(() => {
-
         console.log("authMiddleware success");
         next();
     })

@@ -89,7 +89,7 @@ app.post('/test/image/multer', upload.any(), ((req, res)=>{
 }));
 
 app.get('/session', (req, res)=> {
-    res.status(200).json({session : res.session});
+    res.status(200).json({session : req.session});
 })
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -103,8 +103,8 @@ app.get('/', function (req, res, next) {
 //userControllers
 app.post('/register', sanitizer, userController.register);
 app.post('/login' , sanitizer, userController.login);
-app.delete('/logout', authenticator, userController.logout);
-app.delete('/unregister', authenticator, sanitizer, userController.unregister);
+app.delete('/logout', sanitizer, userController.logout);
+app.delete('/u/unregister', authenticator, sanitizer, userController.unregister);
 app.post('/findid', sanitizer, userController.findID);
 app.put('/findpasswd', sanitizer, userController.findPassword);
 app.put('/u/passwd', authenticator, sanitizer, userController.changePassword);
