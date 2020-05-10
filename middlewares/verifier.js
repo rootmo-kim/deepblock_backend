@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const models = require("../models");
 const salt = require('../config/configs').salt;
 const hash = require('../config/configs').hash;
-const res_handler = require('../utils/responeHandler');
+const res_handler = require('../utils/responseHandler');
 
 module.exports = {
     verifyEmail(req, res){
