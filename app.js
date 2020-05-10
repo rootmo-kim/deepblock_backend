@@ -2,7 +2,7 @@
 require('dotenv').config();
 let redis = require('redis');
 let session = require('express-session');
-let redisStore = require('connect-redis')(session);
+let redis_store = require('connect-redis')(session);
 let express = require('express');
 let bodyParser = require('body-parser');
 let sequelize = require('./models').sequelize;
@@ -26,6 +26,7 @@ let sanitizer = require('./middlewares/sanitizer');
 let base_path = require('./config/configs').base_path;
 const project_dir_name = require('./config/configs').projects;
 const data_dir_name = require('./config/configs').datasets;
+const secret = require('./config/configs').secret;
 const res_handler = require('./controllers/responeHandler');
 
 // Init Express
@@ -34,21 +35,20 @@ var app = express();
 // redis 세션관리
 var redis_client = redis.createClient(6379, 'localhost');
 
-// Init Session
-app.use(session({
-  key: 'sid',
-  secret: 'secret',
-  resave: false,
-  saveUninitialized: true,
-  store : new redisStore({
-    client : redis_client,
-    ttl : 10
-  }),
-  cookie: {
-    maxAge: 24000 * 60 * 60
-  }
-}));
-//redis_client.set('log_info', 'KEY: "log_" + new Date().getTime(), VALUE: username');
+const sess = {
+    key: 'sid',
+    resave: false,
+    secret: 'secret',
+    saveUninitialized: true,
+    store: new redis_store({
+        client: redis_client
+    }),
+    cookie: {
+      maxAge: 24000 * 60 * 60
+    }
+};
+
+app.use(session(sess));
 
 // Set up body-parser with JSON
 app.use(bodyParser.json());
