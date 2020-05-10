@@ -1,5 +1,4 @@
 // modules
-require('dotenv').config();
 let express = require('express');
 let bodyParser = require('body-parser');
 let sequelize = require('./models').sequelize;
@@ -21,10 +20,11 @@ let verification = require('./middlewares/verifier');
 let authMiddleware = require('./middlewares/authenticator');
 let sanitizer = require('./middlewares/sanitizer');
 
-let base_path = require('./config/configs').base_path;
+const base_path = require('./config/configs').base_path;
 const project_dir_name = require('./config/configs').projects;
 const data_dir_name = require('./config/configs').datasets;
-const res_handler = require('./utils/responeHandler');
+const res_handler = require('./utils/responseHandler');
+const customStroage = require('./utils/customStorage');
 
 // Init Express
 var app = express();
@@ -49,24 +49,34 @@ sequelize.sync().then(() => {
 });
 
 // Init multer
-var storage = multer.diskStorage({
+var custom_storage = customStroage({
   destination: function (req, file, cb) {
-    let path = `${base_path}/${req.query.id}/${req.query.name}/${file.fieldname}/`;
+    //let path = `${base_path}/${req.query.id}/${req.query.name}/${file.fieldname}/`;
+    let path = `${base_path}/attachments/`;
     cb(null, path);
   },
   filename: function (req, file, cb) {
-    //TODO : 파일명 hash해서 앞에 ?? 글자만 저장, mime type 추가
-    let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`;
+    //let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`;
+    let filename = `${new Date().valueOf()}_${file.originalname}`;
     cb(null, filename); 
   }
+})
+
+const upload = multer({
+  storage : custom_storage
 });
-var upload = multer({storage : storage});
+
+///////////////////////////////////multer test//////////////////////
+app.post('/test/image/multer', upload.any(), ((req, res)=>{
+  console.log(req.files);
+}));
+/////////////////////////////////////////////////////////////////////
 
 /*
   Request API
 */
 app.get('/', function (req, res, next) {
-  res.status(200).send('Hello world!');
+  res.status(200).send('DeepBlock : GUI based deep learning service');
 });
 
 //userControllers
