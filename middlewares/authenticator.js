@@ -1,5 +1,3 @@
-
-
 const authMiddleware = (req, res, next) => {
     const p = new Promise(
         (resolve, reject) => {
