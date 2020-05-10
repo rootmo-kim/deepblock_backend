@@ -159,7 +159,7 @@ module.exports = {
                 res_handler.resFail400(res, "아이디 또는 비밀번호를 잘 못 입력하셨습니다.");
             } else {
                 //Issue : session
-                req.session.id = user.dataValues.id;
+                req.session.userid = user.dataValues.id;
                 req.session.username = user.dataValues.username;
             
                 res_handler.resSuccess200(res, "로그인 성공");
@@ -180,7 +180,7 @@ module.exports = {
                 res_handler.resFail500(res, "로그아웃 실패");
             }else{
                 res.clearCookie('sid');
-                res.redirect('login');
+                res_handler.resSuccess200(res, "로그아웃 성공");
             }
         });
     },
@@ -277,7 +277,7 @@ module.exports = {
             models.User.update({
                 password : after_hash_password},{
                     where : {
-                        id : req.session.id,
+                        id : req.session.userid,
                         password : before_hash_password
                     }   
                 })

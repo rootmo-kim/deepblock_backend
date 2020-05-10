@@ -20,7 +20,7 @@ module.exports = {
                     model : models.Class
                 }], 
                 where : {
-                    fk_user_id : req.session.id, 
+                    fk_user_id : req.session.userid, 
                     id : req.params.dataset_id
                 }
             });
@@ -65,7 +65,7 @@ module.exports = {
                     where : {class_name : req.body.class_name}
                 }],
                 where : {
-                    fk_user_id : req.session.id,
+                    fk_user_id : req.session.userid,
                 }
             });
 
@@ -73,7 +73,7 @@ module.exports = {
                 transaction.rollback();
                 res_handler.resFail400(res, "중복된 클래스명");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.id}});
+                const user = await models.User.findOne({where : {id : req.session.userid}});
                 const dataset = await models.Dataset.findOne({where : {id : req.params.dataset_id}});
                 const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
                 class_path = `${base_path}/${hashId}/${dataset_dir_name}/${dataset.dataValues.dataset_name}/${req.body.class_name}`;
@@ -124,7 +124,7 @@ module.exports = {
                 transaction.rollback();
                 res_handler.resFail400(res, "잘못 된 요청");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.id}});
+                const user = await models.User.findOne({where : {id : req.session.userid}});
                 const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
                 const dataset_name = dataset_class.dataValues.dataset_name;
                 const class_name = dataset_class.dataValues.Classes[0].dataValues.class_name;
@@ -185,7 +185,7 @@ module.exports = {
                 transaction.rollback();
                 res_handler.resFail400(res, "중복된 클래스명");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.id}});
+                const user = await models.User.findOne({where : {id : req.session.userid}});
                 const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
                 const before_class_name = before_class.dataValues.Classes[0].dataValues.class_name;;
                 const after_class_name = req.body.after;
