@@ -1,10 +1,11 @@
-const authMiddleware = (req, res, next) => {
+const authenticator = (req, res, next) => {
     const p = new Promise(
         (resolve, reject) => {
             resolve();
         }
     )
     p.then(() => {
+
         console.log("authMiddleware success");
         next();
     })
@@ -18,4 +19,4 @@ const authMiddleware = (req, res, next) => {
     });
 };
 
-module.exports = authMiddleware;
+module.exports = authenticator;
