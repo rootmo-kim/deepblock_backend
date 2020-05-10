@@ -1,4 +1,5 @@
 // modules
+let cors = require('cors');
 let redis = require('redis');
 let session = require('express-session');
 let redis_store = require('connect-redis')(session);
@@ -18,9 +19,10 @@ let classController = require('./controllers/classController');
 let imageController = require('./controllers/imageController');
 
 // middlewares
-let authMiddleware = require('./middlewares/authenticator');
+let authenticator = require('./middlewares/authenticator');
 let sanitizer = require('./middlewares/sanitizer');
 
+//config and utils
 const base_path = require('./config/configs').base_path;
 const project_dir_name = require('./config/configs').projects;
 const data_dir_name = require('./config/configs').datasets;
@@ -28,11 +30,18 @@ const res_handler = require('./utils/responseHandler');
 const customStroage = require('./utils/customStorage');
 
 // Init Express
-var app = express();
+let app = express();
 
-// redis 세션관리
-var redis_client = redis.createClient(6379, 'localhost');
+// Redis session
+let redis_client = redis.createClient(6379, 'localhost');
 
+// Cours setting
+app.use(cors({
+  origin : true,
+  credentials : true
+}))
+
+// Init session
 const sess = {
     key: 'sid',
     resave: false,
@@ -42,10 +51,10 @@ const sess = {
         client: redis_client
     }),
     cookie: {
+      httpOnly : true,
       maxAge: 24000 * 60 * 60
     }
 };
-
 app.use(session(sess));
 
 // Set up body-parser with JSON
@@ -57,7 +66,7 @@ sequelize.sync().then(() => {
 });
 
 // Init multer
-var custom_storage = customStroage({
+let custom_storage = customStroage({
   destination: function (req, file, cb) {
     //let path = `${base_path}/${req.query.id}/${req.query.name}/${file.fieldname}/`;
     let path = `${base_path}/attachments/`;
@@ -69,16 +78,20 @@ var custom_storage = customStroage({
     cb(null, filename); 
   }
 })
-
 const upload = multer({
   storage : custom_storage
 });
 
-///////////////////////////////////multer test//////////////////////
+///////////////////////////////////test test//////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 app.post('/test/image/multer', upload.any(), ((req, res)=>{
   console.log(req.files);
 }));
-/////////////////////////////////////////////////////////////////////
+
+app.get('/session', (req, res)=> {
+    res.status(200).json({session : res.session});
+})
+////////////////////////////////////////////////////////////////////////////////
 
 /*
   Request API
@@ -90,42 +103,48 @@ app.get('/', function (req, res, next) {
 //userControllers
 app.post('/register', sanitizer, userController.register);
 app.post('/login' , sanitizer, userController.login);
-app.post('/logout', authMiddleware, userController.logout);
-app.post('/unregister', authMiddleware, sanitizer, userController.unregister);
+app.delete('/logout', authenticator, userController.logout);
+app.delete('/unregister', authenticator, sanitizer, userController.unregister);
 app.post('/findid', sanitizer, userController.findID);
 app.put('/findpasswd', sanitizer, userController.findPassword);
-app.put('/:id/passwd', authMiddleware, sanitizer, userController.changePassword);
-app.patch('/verifyemail', sanitizer, userController.verifyEmail);
-app.patch('/verifypasswd', sanitizer, userController.verifyPassword);
+app.put('/u/passwd', authenticator, sanitizer, userController.changePassword);
+app.put('/verifyemail', sanitizer, userController.verifyEmail);
 
 //projectControllers
-app.get('/:id/projects', authMiddleware, sanitizer, projectController.viewProjectList);
-app.post('/:id/projects', authMiddleware, sanitizer, projectController.createProject);
-app.delete('/:id/projects/:project_id', authMiddleware, sanitizer, projectController.deleteProject);
-app.put('/:id/projects/:project_id', authMiddleware, sanitizer, projectController.updateProjectName);
+app.get('/u/projects', authenticator, sanitizer, projectController.viewProjectList);
+app.post('/u/projects', authenticator, sanitizer, projectController.createProject);
+app.delete('/u/projects/:project_id', authenticator, sanitizer, projectController.deleteProject);
+app.put('/u/projects/:project_id', authenticator, sanitizer, projectController.updateProjectName);
 
 //modelControllers
-app.get('/:id/projects/:project_id', authMiddleware, sanitizer, modelController.loadModelOfProject);
-app.put('/:id/projects/:project_id', authMiddleware, sanitizer, modelController.updateModel);
+app.get('/u/projects/:project_id', authenticator, sanitizer, modelController.loadModelOfProject);
+app.put('/u/projects/:project_id', authenticator, sanitizer, modelController.updateModel);
 //modelControllers - model train/test
-app.post('/:id/projects/:project_id/train', authMiddleware, sanitizer, modelController.trainModel);
-app.post('/:id/projects/:/project_id/test', authMiddleware, sanitizer, modelController.testModel);
+app.post('/u/projects/:project_id/train', authenticator, sanitizer, modelController.trainModel);
+app.post('/u/projects/:/project_id/test', authenticator, sanitizer, modelController.testModel);
 
 //dataControllers
-app.get('/:id/dataset', authMiddleware, sanitizer, datasetController.viewDatasetList);
-app.post('/:id/dataset', authMiddleware, sanitizer, datasetController.createDataset);
-app.delete('/:id/dataset/:dataset_id', authMiddleware, sanitizer, datasetController.deleteDataset);
-app.put('/:id/dataset/:dataset_id', authMiddleware, sanitizer, datasetController.updateDatasetName);
+app.get('/u/dataset', authenticator, sanitizer, datasetController.viewDatasetList);
+app.post('/u/dataset', authenticator, sanitizer, datasetController.createDataset);
+app.delete('/u/dataset/:dataset_id', authenticator, sanitizer, datasetController.deleteDataset);
+app.put('/u/dataset/:dataset_id', authenticator, sanitizer, datasetController.updateDatasetName);
 
 //classController
-app.get('/:id/dataset/:dataset_id/class', authMiddleware, sanitizer, classController.loadClassOfDataset);
-app.post('/:id/dataset/:dataset_id/class', authMiddleware, sanitizer, classController.createClass);
-app.delete('/:id/dataset/:dataset_id/class/:class_id', authMiddleware, sanitizer, classController.deleteClass);
-app.put('/:id/dataset/:dataset_id/class/:class_id', authMiddleware, sanitizer, classController.updateClassName);
+app.get('/u/dataset/:dataset_id/class', authenticator, sanitizer, classController.loadClassOfDataset);
+app.post('/u/dataset/:dataset_id/class', authenticator, sanitizer, classController.createClass);
+app.delete('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, classController.deleteClass);
+app.put('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, classController.updateClassName);
 
-app.get('/:id/dataset/:dataset_id/class/:class_id', authMiddleware, sanitizer, imageController.sendClassImage);
-app.post('/:id/dataset/:dataset_id/class/:class_id/image', authMiddleware, sanitizer, upload.any(), imageController.uploadImage);
-app.delete('/:id/dataset/:dataset_id/class/:class_id/image', authMiddleware, sanitizer, imageController.deleteImage);
+app.get('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, imageController.sendClassImage);
+app.post('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, upload.any(), imageController.uploadImage);
+app.delete('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, imageController.deleteImage);
+
+/*
+    404 not found error handler
+*/
+app.use(function(req, res, next) {
+  res_handler.resFail404(res, '404 Not found TT'); 
+});
 
 
 // Listen

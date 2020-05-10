@@ -17,7 +17,7 @@ module.exports = {
         try{
             const dataset_info = await models.Dataset.findAll({
                 where : {
-                    fk_user_id : req.params.id, 
+                    fk_user_id : req.session.id, 
                 }
             });
 
@@ -58,7 +58,7 @@ module.exports = {
                     where : {dataset_name : req.body.dataset_name}
                 }],
                 where : {
-                    id : req.params.id,
+                    id : req.session.id,
                 }
             });
 
@@ -66,12 +66,12 @@ module.exports = {
                 transaction.rollback();
                 res_handler.resFail400(res, "중복된 데이터셋명");
             }else{
-                const user = await models.User.findOne({where : {id : req.params.id}});
+                const user = await models.User.findOne({where : {id : req.session.id}});
                 const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
                 user_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${req.body.dataset_name}`;
     
                 await models.Dataset.create({
-                    fk_user_id : req.params.id,
+                    fk_user_id : req.session.id,
                     dataset_name : req.body.dataset_name,
                     dataset_path : user_dataset_path
                 }, { 
@@ -106,7 +106,7 @@ module.exports = {
                     where : {id : req.params.dataset_id}
                 }],
                 where : {
-                    id : req.params.id,
+                    id : req.session.id,
                 }
             });
 
@@ -120,7 +120,7 @@ module.exports = {
 
                 await models.Dataset.destroy({
                     where : {
-                        fk_user_id : req.params.id,
+                        fk_user_id : req.session.id,
                         id : req.params.dataset_id,
                         dataset_name : dataset_name,
                         dataset_path : user_dataset_path
@@ -154,7 +154,7 @@ module.exports = {
                     where: {id : req.params.dataset_id}
                 }], 
                 where : {
-                    id : req.params.id
+                    id : req.session.id
                 }
             });
             const after_dataset = await models.User.findOne({
@@ -163,7 +163,7 @@ module.exports = {
                     where: {dataset_name : req.body.after}
                 }], 
                 where : {
-                    id : req.params.id
+                    id : req.session.id
                 }
             });
 
@@ -186,7 +186,7 @@ module.exports = {
                     dataset_path : after_dataset_path
                 },{
                     where : {
-                        fk_user_id : req.params.id,
+                        fk_user_id : req.session.id,
                         id : req.params.dataset_id,
                         dataset_name : before_dataset_name,
                         dataset_path : before_dataset_path

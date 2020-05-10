@@ -1,7 +1,14 @@
-const authMiddleware = (req, res, next) => {
+const res_handler = require('../utils/responseHandler');
+
+const authenticator = (req, res, next) => {
     const p = new Promise(
         (resolve, reject) => {
-            resolve();
+            if(req.session.id)
+            {
+                resolve();
+            }else{
+                reject();
+            }
         }
     )
     p.then(() => {
@@ -10,12 +17,8 @@ const authMiddleware = (req, res, next) => {
     })
     .catch(function(eeror) {
         console.log("authMiddleware failed");
-            // return res.status(403).json({
-            //     success: false,
-            //     message: error
-            // });
-        next();
+        res_handler.resFail401(res, "로그인이 필요합니다");
     });
 };
 
-module.exports = authMiddleware;
+module.exports = authenticator;
