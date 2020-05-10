@@ -1,9 +1,11 @@
 // modules
 require('dotenv').config();
+let redis = require('redis');
+let session = require('express-session');
+let redisStore = require('connect-redis')(session);
 let express = require('express');
 let bodyParser = require('body-parser');
 let sequelize = require('./models').sequelize;
-let session = require('express-session');
 let multer = require("multer");
 let path = require('path');
 let {check, validationResult} = require('express-validator');
@@ -29,16 +31,24 @@ const res_handler = require('./controllers/responeHandler');
 // Init Express
 var app = express();
 
+// redis 세션관리
+var redis_client = redis.createClient(6379, 'localhost');
+
 // Init Session
 app.use(session({
   key: 'sid',
   secret: 'secret',
   resave: false,
   saveUninitialized: true,
+  store : new redisStore({
+    client : redis_client,
+    ttl : 10
+  }),
   cookie: {
     maxAge: 24000 * 60 * 60
   }
 }));
+//redis_client.set('log_info', 'KEY: "log_" + new Date().getTime(), VALUE: username');
 
 // Set up body-parser with JSON
 app.use(bodyParser.json());

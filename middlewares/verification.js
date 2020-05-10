@@ -6,7 +6,7 @@ const res_handler = require('../controllers/responeHandler');
 
 module.exports = {
     verifyEmail(req, res){
-        models.User.update({email_verification: true}, {where: {key_verification: req.query.key}})
+        models.User.update({is_verify: true}, {where: {verify_key: req.query.key}})
         .then((user) => {
             if(!user[0]){
                 res_handler.resFail500(res, "인증키 오류");
@@ -14,14 +14,14 @@ module.exports = {
                 res_handler.resSuccess200(res, "인증 성공 - 로그인 가능!");
             }
         })
-        .catch((err) => {
+        .catch((err) => { 
             res_handler.resFail500(res, "오류");
         })
     },
 
     verifyPassword(req, res){
         const hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
-        models.User.update({password: hashPassword}, {where: {key_verification: req.query.key}})
+        models.User.update({password: hashPassword, is_verify: true},{where: {verify_key: req.query.key}})
         .then((user) => {
             if(!user){
                 res_handler.resFail500(res, "인증키 오류");
