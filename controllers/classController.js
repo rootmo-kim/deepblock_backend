@@ -10,7 +10,7 @@ const salt = require('../config/configs').salt;
 const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
 const dataset_dir_name = require('../config/configs').datasets;
-const res_handler = require('../utils/responeHandler');
+const res_handler = require('../utils/responseHandler');
 
 module.exports = {
     async loadClassOfDataset(req, res){        
