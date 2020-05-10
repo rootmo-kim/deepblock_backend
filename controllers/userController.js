@@ -14,6 +14,7 @@ const data_dir_name = require('../config/configs').datasets;
 const admin_email = require('../config/configs').admin_email;
 const admin_password = require('../config/configs').admin_password;
 const admin_email_service = require('../config/configs').admin_email_service;
+const server_ip = require('../config/configs').server_ip;
 const res_handler = require('../utils/responseHandler');
 
 let redis = require('redis');
@@ -32,13 +33,16 @@ module.exports = {
     register(req, res){
         // [Comment] 입력 받는 user_id 와 password 값 express-validator로 검증할 것
         const hashId = crypto.createHash(hash).update(req.body.username + salt).digest("hex");
-        const hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
+        const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
 
         const original_key = crypto.randomBytes(256).toString('hex');
         const key_start = original_key.substr(100, 16);
         const key_end = original_key.substr(50, 16);
-        const hashKey = key_start + key_end;
-        const url = `http://localhost:8000/verifyEmail?key=${hashKey}`;
+        const hash_key = key_start + key_end;
+        //const url = `http://localhost:8000/verifyEmail?key=${hash_key}`;
+        const url = "<a href='http://" + `${server_ip}` + "/verifyEmail?key=" + `${hash_key}`+ "'>verify</a>"
+
+        console.log(url);
 
         models.User.findOne({
             where : {
@@ -52,8 +56,8 @@ module.exports = {
                models.User.create({
                     username: req.body.username,
                     email: req.body.email,
-                    password: hashPassword,
-                    verify_key: hashKey
+                    password: hash_password,
+                    verify_key: hash_key
                 })
                 .then(() => {
                     fs.mkdir(path.normalize(`${base_path}/${hashId}`), ((err) => {
@@ -107,12 +111,12 @@ module.exports = {
 
     unregister(req, res){
         const hashId = crypto.createHash(hash).update(req.body.username + salt).digest("hex");
-        const hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
+        const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
 
         models.User.findOne({
             where : {
                 username: req.body.username,
-                password: hashPassword
+                password: hash_password
             } 
         })
         .then((user) => {
@@ -120,7 +124,7 @@ module.exports = {
                 models.User.destroy({
                     where:{
                         username: req.body.username,
-                        password: hashPassword
+                        password: hash_password
                     }
                 })
                 .then(() => {
@@ -141,13 +145,12 @@ module.exports = {
 
     login(req, res){
         //로그인
-        const hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
-        redis_client.set('log_' + new Date().getTime(), 'username: ' + req.session.username);
+        const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
 
         models.User.findOne({
             where: {
                 username: req.body.username,
-                password: hashPassword,
+                password: hash_password,
                 is_verify: true
             }
         })
@@ -156,7 +159,9 @@ module.exports = {
                 res_handler.resFail400(res, "아이디 또는 비밀번호를 잘 못 입력하셨습니다.");
             } else {
                 //Issue : session
-                req.session.username = req.body.username;
+                req.session.id = user.dataValues.id;
+                req.session.username = user.dataValues.username;
+            
                 res_handler.resSuccess200(res, "로그인 성공");
             }       
         })
@@ -174,10 +179,9 @@ module.exports = {
             if(err){
                 res_handler.resFail500(res, "로그아웃 실패");
             }else{
-                //res.clearCookie('sid');
+                res.clearCookie('sid');
                 res.redirect('login');
             }
-            //req.session.usernname;
         });
     },
 
@@ -226,10 +230,10 @@ module.exports = {
                 const original_key = crypto.randomBytes(256).toString('hex');
                 const key_start = original_key.substr(100, 16);
                 const key_end = original_key.substr(50, 16);
-                const hashKey = key_start + key_end;
+                const hash_key = key_start + key_end;
 
                 models.User.update({
-                    password: crypto.createHash(hash).update(hashKey + salt).digest("hex")},{
+                    password: crypto.createHash(hash).update(hash_key + salt).digest("hex")},{
                     where: {
                         username : user.dataValues.username, 
                         email : user.dataValues.email
@@ -240,7 +244,7 @@ module.exports = {
                         from: "deepblock.developer@gmail.com",
                         to: req.body.email,
                         subject: "deepblock - 비밀번호 찾기 결과", 
-                        text: `${hashKey}`
+                        text: `${hash_key}`
                     };
                     smtpTransport.sendMail(mailOptions, (err, info) => {
                         if(err){
@@ -261,54 +265,29 @@ module.exports = {
         })
     },
     changePassword(req, res){
-        const hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
-        const original_key = crypto.randomBytes(256).toString('hex');
-        const key_start = original_key.substr(100, 16);
-        const key_end = original_key.substr(50, 16);
-        const hashKey = key_start + key_end;
-        const url = `http://localhost:8000/verifyPassword?key=${hashKey}`;
-
-        models.User.findOne({
-            where : {
-                email: req.body.email,
-                password: hashPassword
-            }
-        })
-        .then((user) => {
-            if(!user){
-                res_handler.resFail400(res, "등록된 이메일 또는 비밀번호가 아닙니다");
-            }else{
-                models.User.update({
-                    is_verify: false, verify_key: hashKey},{
-                    where: { 
-                        email : user.dataValues.email
-                    }    
+        const before_password = req.body.before_password;
+        const after_password = req.body.after_password;
+        const before_hash_password = crypto.createHash(hash).update(before_password + salt).digest("hex");
+        const after_hash_password = crypto.createHash(hash).update(after_password + salt).digest("hex");
+        const after_password_verify = req.body.after_password_verify;
+    
+        if(after_password !== after_password_verify){
+            res_handler.resFail400(res, "비밀번호가 맞지 않습니다");
+        }else{
+            models.User.update({
+                password : after_hash_password},{
+                    where : {
+                        id : req.session.id,
+                        password : before_hash_password
+                    }   
                 })
-                .then(() => {
-                    let mailOptions = {
-                        from: "deepblock.developer@gmail.com",
-                        to: req.body.email,
-                        subject: "deepblock - 비밀번호 변경 인증", 
-                        html: "<h1>비밀번호 변경을 위해 URL을 클릭해주세요</h1>" + url
-                    };
-                    smtpTransport.sendMail(mailOptions, (err, info) => {
-                        if(err){
-                            res_handler. resFail500(res, "이메일 전송 실패");
-                        }else{
-                            res_handler.resSuccess200(res, "이메일 전송 성공");
-                        }
-                        smtpTransport.close();
-                        });
-                    })
+                .then((user) => {
+                    res_handler.resSuccess200(res, "비밀번호 변경 완료");
+                })
                 .catch((err) => {
-                     res_handler. resFail400(res, "오류");
-                }) 
-            }
-        })       
-        .catch((err) => {
-            console.log(err);
-            res_handler. resFail500(res, "회원 정보 없음");
-        })
+                    res_handler. resFail500(res, "회원 정보 없음");
+                })
+            }          
     },
     verifyEmail(req, res){
         models.User.update({is_verify: true}, {where: {verify_key: req.query.key}})
@@ -323,18 +302,4 @@ module.exports = {
             res_handler.resFail500(res, "오류");
         })
     },
-    verifyPassword(req, res){
-        const hashPassword = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
-        models.User.update({password: hashPassword, is_verify: true},{where: {verify_key: req.query.key}})
-        .then((user) => {
-            if(!user){
-                res_handler.resFail500(res, "인증키 오류");
-            }else{
-                res_handler.resSuccess200(res, "인증 성공 - 비밀번호 변경 완료!");
-            }
-        })
-        .catch((err) => {
-            res_handler.resFail500(res, "오류");
-        })
-    }
 };

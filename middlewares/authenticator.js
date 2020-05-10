@@ -12,6 +12,7 @@ const authenticator = (req, res, next) => {
         }
     )
     p.then(() => {
+
         console.log("authMiddleware success");
         next();
     })
