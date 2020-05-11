@@ -2,17 +2,17 @@
 module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.createTable('Projects', {
-      project_id: {
+      projectID: {
         allowNull: false,
         primaryKey: true,
         autoIncrement: true,
         type: Sequelize.INTEGER
       },
-      project_name: {
+      projectName: {
         allowNull: false,
         type: Sequelize.STRING
       },
-      project_path: {
+      projectPath: {
         allowNull: false,
         type: Sequelize.STRING
       },

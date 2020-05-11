@@ -2,17 +2,13 @@
 module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.createTable('Dataset', {
-      dataset_id: {
+      datasetID: {
         allowNull: false,
         primaryKey: true,
         autoIncrement: true,
         type: Sequelize.INTEGER
       },
-      dataset_name: {
-        allowNull: false,
-        type: Sequelize.STRING
-      },
-      project_path: {
+      datasetName: {
         allowNull: false,
         type: Sequelize.STRING
       },

@@ -1,23 +1,14 @@
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('Classes', {
-      class_id: {
+    return queryInterface.createTable('Attaches', {
+      imageID: {
         allowNull: false,
-        primaryKey: true,
         autoIncrement: true,
+        primaryKey: true,
         type: Sequelize.INTEGER
       },
-      class_name: {
-        allowNull: false,
-        type: Sequelize.STRING
-      },
-      image_num: {
-        allowNull: false,
-        type: Sequelize.STRING
-      },
-      class_path: {
-        allowNull: false,
+      originalName: {
         type: Sequelize.STRING
       },
       createdAt: {
@@ -31,6 +22,6 @@ module.exports = {
     });
   },
   down: (queryInterface, Sequelize) => {
-    return queryInterface.dropTable('Classes');
+    return queryInterface.dropTable('Attaches');
   }
 };

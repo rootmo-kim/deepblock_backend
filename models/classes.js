@@ -1,24 +1,24 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  const Class = sequelize.define('Class', {
-    class_name: {
+  const Classes = sequelize.define('Classes', {
+    className: {
       allowNull: false,
       type: DataTypes.STRING
     },
-    image_num: {
+    imageCount: {
       allowNull: false,
       type: DataTypes.STRING
     },
-    class_path: {
+    classPath: {
       allowNull: false,
       type: DataTypes.STRING
     }
   }, {});
-  Class.associate = function(models){
-    models.Class.hasMany(models.Image,{
-      foreignKey: 'fk_class_id',
+  Classes.associate = function(models){
+    models.Classes.hasMany(models.Attaches,{
+      foreignKey: 'fk_classes_id',
       onDelete: 'cascade',
     })
   }
-  return Class;
+  return Classes;
 };

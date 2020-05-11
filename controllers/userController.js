@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const fs = require('fs');
+const fsp = require('fs').promises;
 const rimraf = require('rimraf');
 const path = require('path');
 const nodemailer = require('nodemailer');
@@ -17,8 +18,8 @@ const admin_email_service = require('../config/configs').admin_email_service;
 const server_ip = require('../config/configs').server_ip;
 const res_handler = require('../utils/responseHandler');
 
-let redis = require('redis');
-var redis_client = redis.createClient(6379, 'localhost');
+// let redis = require('redis');
+// var redis_client = redis.createClient(6379, 'localhost');
 
 
 smtpTransport = nodemailer.createTransport(smtpTransporter({
@@ -30,100 +31,149 @@ smtpTransport = nodemailer.createTransport(smtpTransporter({
 }));
 
 module.exports = {
-    register(req, res){
-        // [Comment] 입력 받는 user_id 와 password 값 express-validator로 검증할 것
-        const hashId = crypto.createHash(hash).update(req.body.username + salt).digest("hex");
-        const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
+    async register(req, res){
+        let user_path;
+        let transaction;
 
-        const original_key = crypto.randomBytes(256).toString('hex');
-        const key_start = original_key.substr(100, 16);
-        const key_end = original_key.substr(50, 16);
-        const hash_key = key_start + key_end;
-        //const url = `http://localhost:8000/verifyEmail?key=${hash_key}`;
-        const url = "<a href='http://" + `${server_ip}` + "/verifyEmail?key=" + `${hash_key}`+ "'>verify</a>"
+        try{
+            transaction = await models.sequelize.transaction();
 
-        console.log(url);
+            let user_check = [];
+            user_check.push(await models.Users.findOne({where : {username : req.body.username}}));
+            user_check.push(await models.Users.findOne({where : {email : req.body.email}}));
 
-        models.User.findOne({
-            where : {
-                username: req.body.username
-            } 
-        })
-        .then((user)=>{
-            if(user){
-                res_handler.resFail400(res, "중복된 아이디 입니다");
+            if(user_check[0] && user_check[1]){
+                res_handler.resFail401(res, "중복된 아이디 이메일 입니다");
+            }else if(user_check[0]){
+                res_handler.resFail401(res, "중복된 아이디 입니다");
+            }else if(user_check[1]){
+                res_handler.resFail401(res, "중복된 이메일 입니다");
             }else{
-               models.User.create({
+                const hashId = crypto.createHash(hash).update(req.body.username + salt).digest("hex");
+                const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
+                const original_key = crypto.randomBytes(256).toString('hex');
+                const hash_key = original_key.substr(100, 16)+original_key.substr(50, 16);
+                await models.Users.create({
                     username: req.body.username,
                     email: req.body.email,
                     password: hash_password,
-                    verify_key: hash_key
+                    verifyKey: hash_key
+                }, {
+                    transaction
+                });
+
+                user_path = `${base_path}/${hashId}`;
+
+                fs.mkdirSync(user_path);
+                fsp.mkdir(`${user_path}/${project_dir_name}`);
+                fsp.mkdir(`${user_path}/${data_dir_name}`);
+
+                const url = "<a href='http://" + `${server_ip}` + "/verifyEmail?key=" + `${hash_key}`+ "'>verify</a>"        
+                const mailOptions = {
+                    from: admin_email,
+                    to: req.body.email,
+                    subject: "deepblock - 이메일 인증을 해주세요",
+                    html: "<h1>이메일 인증을 위해 URL을 클릭해주세요</h1>" + url
+                };
+                smtpTransport.sendMail(mailOptions, (e, info)=>{
+                    if(!e){
+                        smtpTransport.close(); 
+                    }
                 })
-                .then(() => {
-                    fs.mkdir(path.normalize(`${base_path}/${hashId}`), ((err) => {
-                        if(err){
-                            console.log(err);
-                            res_handler.resFail400(res, "회원가입 실패");
-                        }else{
-                            fs.mkdir(path.normalize(`${base_path}/${hashId}/${project_dir_name}`), ((err)=>{
-                                if(err){
-                                    rimraf.sync(path.normalize(`${base_path}/${hashId}`));
-                                    res_handler.resFail400(res, "회원가입 실패");
-                                }else{
-                                    fs.mkdir(path.normalize(`${base_path}/${hashId}/${data_dir_name}`), ((err)=>{
-                                        if(err){
-                                            rimraf.sync(path.normalize(`${base_path}/${hashId}`));
-                                            res_handler.resFail400(res, "회원가입 실패");
-                                        }else{
-                                            let mailOptions = {
-                                                from: "deepblock.developer@gmail.com",
-                                                to: req.body.email,
-                                                subject: "deepblock - 이메일 인증을 해주세요",
-                                                html: "<h1>이메일 인증을 위해 URL을 클릭해주세요</h1>" + url
-                                            };
-                                            smtpTransport.sendMail(mailOptions, (err, info) => {
-                                                if(err){
-                                                    console.log(err);
-                                                }else{
-                                                    console.log("email sent");
-                                                }
-                                                smtpTransport.close();
-                                            });
-                                            res_handler.resSuccess200(res, "회원가입 성공");
-                                        }
-                                    }));
-                                }
-                            }));
-                        }
-                    }));                
-                })
-                .catch((err) => {
-                    console.log(err);
-                    res_handler.resFail500(res, "회원가입 실패");
-                })
+                transaction.commit();
+                res_handler.resSuccess200(res, "회원가입 성공 이메일 인증을 해주세요");
             }
-        })
-        .catch((err) => {
-            console.log(err);
-            res_handler.resFail500(res, "회원가입 실패");
-        })
+        }catch(err){
+            //console.log(err);
+            if(user_path){
+                fs.access(user_path, fs.constants.F_OK, ((e)=>{
+                    if(!e){
+                        rimraf.sync(user_path);
+                    }
+                }));
+            }
+            transaction.rollback();
+            res_handler.resFail500(res, "처리 실패");
+        }
+
+        // models.Users.findOne({
+        //     where : {
+        //         username: req.body.username
+        //     } 
+        // })
+        // .then((user)=>{
+        //     if(user){
+        //         res_handler.resFail401(res, "중복된 아이디 입니다");
+        //     }else{
+        //        models.Users.create({
+        //             username: req.body.username,
+        //             email: req.body.email,
+        //             password: hash_password,
+        //             verifyKey: hash_key
+        //         })
+        //         .then(() => {
+        //             fs.mkdir(path.normalize(`${base_path}/${hashId}`), ((err) => {
+        //                 if(err){
+        //                     res_handler.resFail401(res, "개인 디렉토리가 존재합니다");
+        //                 }else{
+        //                     fs.mkdir(path.normalize(`${base_path}/${hashId}/${project_dir_name}`), ((err)=>{
+        //                         if(err){
+        //                             rimraf.sync(path.normalize(`${base_path}/${hashId}`));
+        //                             res_handler.resFail401(res, "프로젝트 디렉토리가 존재합니다");
+        //                         }else{
+        //                             fs.mkdir(path.normalize(`${base_path}/${hashId}/${data_dir_name}`), ((err)=>{
+        //                                 if(err){
+        //                                     rimraf.sync(path.normalize(`${base_path}/${hashId}`));
+        //                                     res_handler.resFail401(res, "데이터셋 디렉토리가 존재합니다");
+        //                                 }else{
+        //                                     let mailOptions = {
+        //                                         from: "deepblock.developer@gmail.com",
+        //                                         to: req.body.email,
+        //                                         subject: "deepblock - 이메일 인증을 해주세요",
+        //                                         html: "<h1>이메일 인증을 위해 URL을 클릭해주세요</h1>" + url
+        //                                     };
+        //                                     smtpTransport.sendMail(mailOptions, (err, info) => {
+        //                                         if(err){
+        //                                             console.log(err);
+        //                                         }else{
+        //                                             console.log("email sent");
+        //                                         }
+        //                                         smtpTransport.close();
+        //                                     });
+        //                                     res_handler.resSuccess200(res, "회원가입 성공 이메일 인증을 해주세요");
+        //                                 }
+        //                             }));
+        //                         }
+        //                     }));
+        //                 }
+        //             }));                
+        //         })
+        //         .catch((err) => {
+        //             res_handler.resFail401(res, "회원가입 실패");
+        //         })
+        //     }
+        // })
+        // .catch((err) => {
+        //     res_handler.resFail401(res, "회원가입 실패");
+        // })
     },
 
     unregister(req, res){
         const hashId = crypto.createHash(hash).update(req.body.username + salt).digest("hex");
         const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
 
-        models.User.findOne({
+        models.Users.findOne({
             where : {
-                username: req.body.username,
+                username: req.session.username,
                 password: hash_password
             } 
         })
         .then((user) => {
             if(user){
-                models.User.destroy({
+                models.Users.destroy({
                     where:{
-                        username: req.body.username,
+                        //세션도날리기
+                        username: req.session.username,
                         password: hash_password
                     }
                 })
@@ -131,15 +181,16 @@ module.exports = {
                     rimraf.sync(`${base_path}/${hashId}`);
                     res_handler.resSuccess200(res, "회원탈퇴 성공");
                 })
-                .catch(() => {
-                    res_handler.resFail400(res, "회원탈퇴 실패");
+                .catch((err) => {
+                    console.log(err);
+                    res_handler.resFail401(res, "회원탈퇴 실패");
                 })
             }else{
-                res_handler.resFail400(res, "아이디 또는 비밀번호를 잘 못 입력하셨습니다.");
+                res_handler.resFail401(res, "비밀번호 오류.");
             }
         })
         .catch(() => {
-            res_handler.resFail500(res, "회원탈퇴 실패");
+            res_handler.resFail401(res, "비밀번호 오류");
         })
     },
 
@@ -147,37 +198,36 @@ module.exports = {
         //로그인
         const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
 
-        models.User.findOne({
+        models.Users.findOne({
             where: {
                 username: req.body.username,
-                password: hash_password,
-                is_verify: true
+                password: hash_password
             }
         })
         .then((user) => {
-            if(!user){
-                res_handler.resFail400(res, "아이디 또는 비밀번호를 잘 못 입력하셨습니다.");
-            } else {
-                //Issue : session
-                req.session.userid = user.dataValues.id;
-                req.session.username = user.dataValues.username;
-            
-                res_handler.resSuccess200(res, "로그인 성공");
+            if(user.dataValues.isVerify === false){
+                res_handler.resFail403(res, "이메일 인증필요");
+            }else{
+                if(!user){
+                    res_handler.resFail401(res, "아이디 비밀번호 오류");
+                } else {
+                    req.session.userID = user.dataValues.userID;
+                    req.session.username = user.dataValues.username;
+                
+                    res_handler.resSuccess200(res, "로그인 성공");
+                }
             }       
         })
         .catch((err) =>{
             console.log(err);
-            res_handler.resFail500(res, "다시 시도해주세요");
+            res_handler.resFail401(res, "아이디 비밀번호 오류");
         });
     },
 
     logout(req, res){
-        //로그아웃
-        //TODO 
-        //Coment : authMiddleware 구현 후 테스트 가능하니 authMiddleware 구현 빠르게 해야함
         req.session.destroy((err) => {
             if(err){
-                res_handler.resFail500(res, "로그아웃 실패");
+                res_handler.resFail401(res, "로그아웃 실패");
             }else{
                 res.clearCookie('sid');
                 res_handler.resSuccess200(res, "로그아웃 성공");
@@ -186,14 +236,14 @@ module.exports = {
     },
 
     findID(req, res){
-        models.User.findOne({
+        models.Users.findOne({
             where : {
                 email : req.body.email
             }
         })
         .then((user) => {
             if(!user){
-                res_handler.resFail400(res, "등록된 이메일이 아닙니다");
+                res_handler.resFail401(res, "등록되지 않은 사용자 입니다");
             }else{
                 let mailOptions = {
                     from: "deepblock.developer@gmail.com",
@@ -212,12 +262,12 @@ module.exports = {
             }
         })
         .catch((err) => {
-            res_handler.resFail500(res, "아이디 찾기 실패");
+            res_handler.resFail401(res, "등록되지 않은 사용자 입니다");
         })
     },
 
     findPassword(req, res){
-        models.User.findOne({
+        models.Users.findOne({
             where : {
                 username : req.body.username,
                 email : req.body.email
@@ -225,14 +275,14 @@ module.exports = {
         })
         .then((user) => {
             if(!user){
-                res_handler.resFail400(res, "등록된 이메일 또는 아이디가 아닙니다");
+                res_handler.resFail401(res, "등록되지 않은 사용자 입니다");
             }else{
                 const original_key = crypto.randomBytes(256).toString('hex');
                 const key_start = original_key.substr(100, 16);
                 const key_end = original_key.substr(50, 16);
                 const hash_key = key_start + key_end;
 
-                models.User.update({
+                models.Users.update({
                     password: crypto.createHash(hash).update(hash_key + salt).digest("hex")},{
                     where: {
                         username : user.dataValues.username, 
@@ -243,7 +293,7 @@ module.exports = {
                     let mailOptions = {
                         from: "deepblock.developer@gmail.com",
                         to: req.body.email,
-                        subject: "deepblock - 비밀번호 찾기 결과", 
+                        subject: "deepblock - 임시 비밀번호", 
                         text: `${hash_key}`
                     };
                     smtpTransport.sendMail(mailOptions, (err, info) => {
@@ -256,12 +306,12 @@ module.exports = {
                     });
                 })
                 .catch((err) => {
-                     res_handler. resFail500(res, "오류");
+                     res_handler. resFail401(res, "등록되지 않은 사용자 입니다");
                 }) 
             }
         })
         .catch((err) => {
-            res_handler. resFail500(res, "비밀번호 찾기 실패");
+            res_handler. resFail401(res, "등록되지 않은 사용자입니다");
         })
     },
     changePassword(req, res){
@@ -272,12 +322,12 @@ module.exports = {
         const after_password_verify = req.body.after_password_verify;
     
         if(after_password !== after_password_verify){
-            res_handler.resFail400(res, "비밀번호가 맞지 않습니다");
+            res_handler.resFail401(res, "비밀번호가 잘못되었습니다");
         }else{
-            models.User.update({
+            models.Users.update({
                 password : after_hash_password},{
                     where : {
-                        id : req.session.userid,
+                        userID : req.session.userID,
                         password : before_hash_password
                     }   
                 })
@@ -285,21 +335,21 @@ module.exports = {
                     res_handler.resSuccess200(res, "비밀번호 변경 완료");
                 })
                 .catch((err) => {
-                    res_handler. resFail500(res, "회원 정보 없음");
+                    res_handler. resFail401(res, "비밀번호가 잘못되었습니다");
                 })
             }          
     },
     verifyEmail(req, res){
-        models.User.update({is_verify: true}, {where: {verify_key: req.query.key}})
+        models.Users.update({isVerify: true}, {where: {verifyKey: req.query.key}})
         .then((user) => {
             if(!user[0]){
-                res_handler.resFail500(res, "인증키 오류");
+                res_handler.resFail401(res, "인증키 오류");
             }else{
                 res_handler.resSuccess200(res, "인증 성공 - 로그인 가능!");
             }
         })
         .catch((err) => { 
-            res_handler.resFail500(res, "오류");
+            res_handler.resFail401(res, "인증키 오류");
         })
     },
 };

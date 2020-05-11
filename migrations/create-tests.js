@@ -10,11 +10,11 @@ module.exports = {
       },
       loss: {
         allowNull: false,
-        type: Sequelize.STRING
+        type: Sequelize.DOUBLE
       },
       accuracy: {
         allowNull: false,
-        type: Sequelize.STRING
+        type: Sequelize.DOUBLE
       },
       createdAt: {
         allowNull: false,

@@ -1,10 +1,10 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  const User = sequelize.define('User', {
+  const Users = sequelize.define('Users', {
     username: {
       allowNull: false,
       unique: true,
-      type: DataTypes.STRING,
+      type: DataTypes.STRING
     },
     password: {
       allowNull: false,
@@ -15,27 +15,27 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       type: DataTypes.STRING
     },
-    is_verify: {
+    isVerify: {
       required: true,
       defaultValue: false,
       type: DataTypes.BOOLEAN
     },
-    verify_key: {
+    verifyKey: {
       required: true,
       allowNull: false,
       type: DataTypes.STRING
     },
   }, {});
-  User.associate = function(models) {
-    models.User.hasMany(models.Project,{
-      foreignKey: 'fk_user_id',
+  Users.associate = function(models) {
+    models.Users.hasMany(models.Projects,{
+      foreignKey: 'fk_users_id',
       onDelete: 'cascade',
     })
 
-    models.User.hasMany(models.Dataset,{
-      foreignKey: 'fk_user_id',
+    models.Users.hasMany(models.Dataset,{
+      foreignKey: 'fk_users_id',
       onDelete: 'cascade',
     })
   };
-  return User;
+  return Users;
 };

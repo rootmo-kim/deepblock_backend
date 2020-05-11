@@ -1,14 +1,14 @@
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('Images', {
-      image_id: {
+    return queryInterface.createTable('Trains', {
+      no: {
+        unique: true,
         allowNull: false,
-        primaryKey: true,
         autoIncrement: true,
         type: Sequelize.INTEGER
       },
-      original_name: {
+      resultPath: {
         allowNull: false,
         type: Sequelize.STRING
       },
@@ -23,6 +23,6 @@ module.exports = {
     });
   },
   down: (queryInterface, Sequelize) => {
-    return queryInterface.dropTable('Images');
+    return queryInterface.dropTable('Trains');
   }
 };
