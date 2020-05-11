@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING
     },
   }, {});
-  Users.associate = function(models) {
+  User.associate = function(models) {
     models.User.hasMany(models.Project,{
       foreignKey: 'userID',
       onDelete: 'cascade',
