@@ -3,8 +3,8 @@ POST http://localhost:8000/register
 Content-Type: application/json
 
 {
-    "username":"111",
-    "password":"0",
+    "username":"11",
+    "password":"11",
     "email":"rmsah12@naver.com"
 }
 
@@ -19,6 +19,15 @@ Content-Type: application/json
 
 ###
 DELETE http://localhost:8000/u/unregister
+Content-Type: application/json
+
+{
+    "username":"11",
+    "password":"11"
+}
+
+###
+POST http://localhost:8000/login
 Content-Type: application/json
 
 {

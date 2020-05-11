@@ -95,103 +95,38 @@ module.exports = {
             transaction.rollback();
             res_handler.resFail500(res, "처리 실패");
         }
-
-        // models.Users.findOne({
-        //     where : {
-        //         username: req.body.username
-        //     } 
-        // })
-        // .then((user)=>{
-        //     if(user){
-        //         res_handler.resFail401(res, "중복된 아이디 입니다");
-        //     }else{
-        //        models.Users.create({
-        //             username: req.body.username,
-        //             email: req.body.email,
-        //             password: hash_password,
-        //             verifyKey: hash_key
-        //         })
-        //         .then(() => {
-        //             fs.mkdir(path.normalize(`${base_path}/${hashId}`), ((err) => {
-        //                 if(err){
-        //                     res_handler.resFail401(res, "개인 디렉토리가 존재합니다");
-        //                 }else{
-        //                     fs.mkdir(path.normalize(`${base_path}/${hashId}/${project_dir_name}`), ((err)=>{
-        //                         if(err){
-        //                             rimraf.sync(path.normalize(`${base_path}/${hashId}`));
-        //                             res_handler.resFail401(res, "프로젝트 디렉토리가 존재합니다");
-        //                         }else{
-        //                             fs.mkdir(path.normalize(`${base_path}/${hashId}/${data_dir_name}`), ((err)=>{
-        //                                 if(err){
-        //                                     rimraf.sync(path.normalize(`${base_path}/${hashId}`));
-        //                                     res_handler.resFail401(res, "데이터셋 디렉토리가 존재합니다");
-        //                                 }else{
-        //                                     let mailOptions = {
-        //                                         from: "deepblock.developer@gmail.com",
-        //                                         to: req.body.email,
-        //                                         subject: "deepblock - 이메일 인증을 해주세요",
-        //                                         html: "<h1>이메일 인증을 위해 URL을 클릭해주세요</h1>" + url
-        //                                     };
-        //                                     smtpTransport.sendMail(mailOptions, (err, info) => {
-        //                                         if(err){
-        //                                             console.log(err);
-        //                                         }else{
-        //                                             console.log("email sent");
-        //                                         }
-        //                                         smtpTransport.close();
-        //                                     });
-        //                                     res_handler.resSuccess200(res, "회원가입 성공 이메일 인증을 해주세요");
-        //                                 }
-        //                             }));
-        //                         }
-        //                     }));
-        //                 }
-        //             }));                
-        //         })
-        //         .catch((err) => {
-        //             res_handler.resFail401(res, "회원가입 실패");
-        //         })
-        //     }
-        // })
-        // .catch((err) => {
-        //     res_handler.resFail401(res, "회원가입 실패");
-        // })
     },
 
-    unregister(req, res){
-        const hashId = crypto.createHash(hash).update(req.body.username + salt).digest("hex");
-        const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
+    async unregister(req, res){
+        try{
+            const hashId = crypto.createHash(hash).update(req.body.username + salt).digest("hex");
+            const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
 
-        models.Users.findOne({
-            where : {
-                username: req.session.username,
-                password: hash_password
-            } 
-        })
-        .then((user) => {
-            if(user){
-                models.Users.destroy({
-                    where:{
-                        //세션도날리기
-                        username: req.session.username,
-                        password: hash_password
-                    }
-                })
-                .then(() => {
-                    rimraf.sync(`${base_path}/${hashId}`);
-                    res_handler.resSuccess200(res, "회원탈퇴 성공");
-                })
-                .catch((err) => {
-                    console.log(err);
-                    res_handler.resFail401(res, "회원탈퇴 실패");
-                })
+            let user = await models.Users.findOne({where : {username : req.session.username, password : hash_password}});
+
+            transaction = await models.sequelize.transaction();
+
+            if(!user){
+                transaction.rollback();
+                res_handler.resFail401(res, "비밀번호 오류");
             }else{
-                res_handler.resFail401(res, "비밀번호 오류.");
+                await models.Users.destroy({
+                    where : {
+                        username : req.session.username,
+                        password : hash_password
+                    }
+                },{
+                    transaction
+                });
+
+                rimraf.sync(`${base_path}/${hashId}`);
+                await transaction.commit();
+                await res_handler.syncResSuccess200(res, "회원탈퇴 성공");
             }
-        })
-        .catch(() => {
-            res_handler.resFail401(res, "비밀번호 오류");
-        })
+        }catch(err){
+            transaction.rollback();
+            res_handler.syncResFail500(res, "처리 실패");
+        }
     },
 
     login(req, res){
@@ -314,6 +249,14 @@ module.exports = {
             res_handler. resFail401(res, "등록되지 않은 사용자입니다");
         })
     },
+    viewUserProfile(req, res){
+
+    },
+    
+    changeAvatar(req, res){
+
+    },
+
     changePassword(req, res){
         const before_password = req.body.before_password;
         const after_password = req.body.after_password;

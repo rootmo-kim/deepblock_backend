@@ -7,16 +7,16 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {});
   Dataset.associate = function(models) {
-    models.Dataset.hasMany(models.Classes,{
-      foreignKey: 'fk_dataset_id',
+    models.Dataset.hasMany(models.Class,{
+      foreignKey: 'datasetID',
       onDelete: 'cascade',
     })
-    models.Dataset.hasMany(models.Trains,{
-      foreignKey: 'fk_dataset_id',
+    models.Dataset.hasMany(models.Train,{
+      foreignKey: 'datasetID',
       onDelete: 'cascade',
     })
-    models.Dataset.hasMany(models.Tests,{
-      foreignKey: 'fk_dataset_id',
+    models.Dataset.hasMany(models.Test,{
+      foreignKey: 'datasetID',
       onDelete: 'cascade',
     })
   };
