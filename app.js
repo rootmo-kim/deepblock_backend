@@ -103,7 +103,7 @@ app.get('/', function (req, res, next) {
 //userControllers
 app.post('/register', sanitizer, userController.register);
 app.post('/login' , sanitizer, userController.login);
-app.delete('/logout', sanitizer, userController.logout);
+app.delete('/logout', authenticator, sanitizer, userController.logout);
 app.delete('/u/unregister', authenticator, sanitizer, userController.unregister);
 app.post('/findid', sanitizer, userController.findID);
 app.put('/findpasswd', sanitizer, userController.findPassword);
