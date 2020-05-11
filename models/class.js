@@ -1,6 +1,6 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  const Classes = sequelize.define('Classes', {
+  const Class = sequelize.define('Class', {
     className: {
       allowNull: false,
       type: DataTypes.STRING
@@ -14,11 +14,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING
     }
   }, {});
-  Classes.associate = function(models){
-    models.Classes.hasMany(models.Attaches,{
-      foreignKey: 'fk_classes_id',
+  Class.associate = function(models){
+    models.Class.hasMany(models.Attach,{
+      foreignKey: 'classID',
       onDelete: 'cascade',
     })
   }
-  return Classes;
+  return Class;
 };
