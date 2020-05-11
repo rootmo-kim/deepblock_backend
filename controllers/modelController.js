@@ -24,6 +24,14 @@ module.exports = {
         
     },
 
+    trainResult(req, res){
+
+    },
+
+    testResult(req, res){
+
+    },
+
     async trainModel(req, res){
         let history;
         let model;
