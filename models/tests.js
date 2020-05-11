@@ -1,17 +1,17 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  const Test = sequelize.define('Test', {
+  const Tests = sequelize.define('Tests', {
     loss: {
       allowNull: false,
-      type: DataTypes.STRING
+      type: DataTypes.DOUBLE
     },
     accuracy: {
       allowNull: false,
-      type: DataTypes.STRING
+      type: DataTypes.DOUBLE
     }
   }, {});
-  Test.associate = function(models) {
+  Tests.associate = function(models) {
     // associations can be defined here
   };
-  return Test;
+  return Tests;
 };

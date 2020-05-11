@@ -1,6 +1,6 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  const Attachment = sequelize.define('Attachment', {
+  const Attachments = sequelize.define('Attachments', {
     hash: {
       unique: true,
       allowNull: false,
@@ -11,11 +11,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING
     }
   }, {});
-  Attachment.associate = function(models) {
-    models.Attachment.hasMany(models.Image,{
-      foreignKey: 'fk_attachment_id',
+  Attachments.associate = function(models) {
+    models.Attachments.hasMany(models.Attaches,{
+      foreignKey: 'fk_attachments_id',
       onDelete: 'cascade',
     })
   };
-  return Attachment;
+  return Attachments;
 };

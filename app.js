@@ -108,7 +108,7 @@ app.delete('/u/unregister', authenticator, sanitizer, userController.unregister)
 app.post('/findid', sanitizer, userController.findID);
 app.put('/findpasswd', sanitizer, userController.findPassword);
 app.put('/u/passwd', authenticator, sanitizer, userController.changePassword);
-app.put('/verifyemail', sanitizer, userController.verifyEmail);
+app.get('/verifyemail', sanitizer, userController.verifyEmail);
 
 //projectControllers
 app.get('/u/projects', authenticator, sanitizer, projectController.viewProjectList);
@@ -121,7 +121,7 @@ app.get('/u/projects/:project_id', authenticator, sanitizer, modelController.loa
 app.put('/u/projects/:project_id', authenticator, sanitizer, modelController.updateModel);
 //modelControllers - model train/test
 app.post('/u/projects/:project_id/train', authenticator, sanitizer, modelController.trainModel);
-app.post('/u/projects/:/project_id/test', authenticator, sanitizer, modelController.testModel);
+app.post('/u/projects/:project_id/test', authenticator, sanitizer, modelController.testModel);
 
 //dataControllers
 app.get('/u/dataset', authenticator, sanitizer, datasetController.viewDatasetList);
