@@ -147,7 +147,7 @@ module.exports = {
             }       
         })
         .catch((err) =>{
-            res_handler.resFail401(res, "아이디 비밀번호 오류");
+            res_handler.resFail500(res, "처리 실패");
         });
     },
 
