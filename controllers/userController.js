@@ -140,22 +140,18 @@ module.exports = {
             }
         })
         .then((user) => {
-            if(user.dataValues.isVerify === false){
+            if(!user){
+                res_handler.resFail401(res, "아이디 비밀번호 오류");
+            }else if(user.dataValues.isVerify === false){
                 res_handler.resFail403(res, "이메일 인증필요");
             }else{
-                if(!user){
-                    res_handler.resFail401(res, "아이디 비밀번호 오류");
-                } else {
-                    req.session.userID = user.dataValues.userID;
-                    req.session.username = user.dataValues.username;
-                
-                    res_handler.resSuccess200(res, "로그인 성공");
-                }
+                req.session.userID = user.dataValues.userID;
+                req.session.username = user.dataValues.username;
+                res_handler.resSuccess200(res, "로그인 성공");
             }       
         })
         .catch((err) =>{
-            console.log(err);
-            res_handler.resFail401(res, "아이디 비밀번호 오류");
+            res_handler.resFail500(res, "처리 실패");
         });
     },
 

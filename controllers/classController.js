@@ -20,7 +20,7 @@ module.exports = {
                     model : models.Class
                 }], 
                 where : {
-                    fk_user_id : req.session.userid, 
+                    userIDser_id : req.session.userid, 
                     id : req.params.dataset_id
                 }
             });
@@ -65,7 +65,7 @@ module.exports = {
                     where : {class_name : req.body.class_name}
                 }],
                 where : {
-                    fk_user_id : req.session.userid,
+                    userIDser_id : req.session.userid,
                 }
             });
 
@@ -79,7 +79,7 @@ module.exports = {
                 class_path = `${base_path}/${hashId}/${dataset_dir_name}/${dataset.dataValues.dataset_name}/${req.body.class_name}`;
     
                 await models.Class.create({
-                        fk_dataset_id : req.params.dataset_id,
+                        datasetIDataset_id : req.params.dataset_id,
                         class_name : req.body.class_name,
                         image_num : 0,
                         class_path : class_path
@@ -132,7 +132,7 @@ module.exports = {
 
                 await models.Class.destroy({
                     where : {
-                        fk_dataset_id : req.params.dataset_id,
+                        datasetIDataset_id : req.params.dataset_id,
                         id : req.params.class_id,
                         class_name : class_name,
                         class_path : user_class_path
@@ -198,7 +198,7 @@ module.exports = {
                     class_path : after_class_path
                 },{
                     where : {
-                        fk_dataset_id : req.params.dataset_id,
+                        datasetIDataset_id : req.params.dataset_id,
                         id : req.params.class_id,
                         class_name : before_class_name,
                         class_path : before_class_path

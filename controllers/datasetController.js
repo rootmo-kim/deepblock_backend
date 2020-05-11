@@ -17,7 +17,7 @@ module.exports = {
         try{
             const dataset_info = await models.Dataset.findAll({
                 where : {
-                    fk_user_id : req.session.userid, 
+                    userIDid : req.session.userid, 
                 }
             });
 
@@ -71,7 +71,7 @@ module.exports = {
                 user_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${req.body.dataset_name}`;
     
                 await models.Dataset.create({
-                    fk_user_id : req.session.userid,
+                    userIDid : req.session.userid,
                     dataset_name : req.body.dataset_name,
                     dataset_path : user_dataset_path
                 }, { 
@@ -120,7 +120,7 @@ module.exports = {
 
                 await models.Dataset.destroy({
                     where : {
-                        fk_user_id : req.session.userid,
+                        userIDid : req.session.userid,
                         id : req.params.dataset_id,
                         dataset_name : dataset_name,
                         dataset_path : user_dataset_path
@@ -186,7 +186,7 @@ module.exports = {
                     dataset_path : after_dataset_path
                 },{
                     where : {
-                        fk_user_id : req.session.userid,
+                        userIDid : req.session.userid,
                         id : req.params.dataset_id,
                         dataset_name : before_dataset_name,
                         dataset_path : before_dataset_path

@@ -17,7 +17,7 @@ module.exports = {
         try{
             const projects_info = await models.Project.findAll({
                 where : {
-                    fk_user_id : req.session.userid, 
+                    userID : req.session.userid, 
                 }
             });
 
@@ -71,7 +71,7 @@ module.exports = {
                 user_project_path = `${base_path}/${hashId}/${project_dir_name}/${req.body.project_name}`;
     
                 await models.Project.create({
-                    fk_user_id : req.session.userid,
+                    userID : req.session.userid,
                     project_name : req.body.project_name,
                     project_path : user_project_path
                 }, { 
@@ -120,7 +120,7 @@ module.exports = {
 
                 await models.Project.destroy({
                     where : {
-                        fk_user_id : req.session.userid,
+                        userID : req.session.userid,
                         id : req.params.project_id,
                         project_name : project_name,
                         project_path : user_project_path
@@ -186,7 +186,7 @@ module.exports = {
                     project_path : after_project_path
                 },{
                     where : {
-                        fk_user_id : req.session.userid,
+                        userID : req.session.userid,
                         id : req.params.project_id,
                         project_name : before_project_name,
                         project_path : before_project_path
