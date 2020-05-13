@@ -1,3 +1,5 @@
+'use strict'; 
+
 const crypto = require("crypto");
 const fs = require('fs');
 const fsp = require('fs').promises;
@@ -49,6 +51,7 @@ module.exports = {
                 const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
                 const original_key = crypto.randomBytes(256).toString('hex');
                 const hash_key = original_key.substr(100, 16)+original_key.substr(50, 16);
+
                 await models.User.create({
                     username: req.body.username,
                     email: req.body.email,
@@ -115,7 +118,6 @@ module.exports = {
                 },{
                     transaction
                 });
-            
                 rimraf.sync(`${base_path}/${hashId}`);
                 transaction.commit();
                 res_handler.resSuccess200(res, "회원탈퇴 성공");
@@ -162,84 +164,75 @@ module.exports = {
         });
     },
 
-    findID(req, res){
-        models.User.findOne({
-            where : {
-                email : req.body.email
-            }
-        })
-        .then((user) => {
+    async findID(req, res){
+        let transaction;
+        
+        try{
+            transaction = await models.sequelize.transaction();
+
+            let user = await models.User.findOne({where : {email : req.body.email}});
+
             if(!user){
                 res_handler.resFail401(res, "등록되지 않은 사용자 입니다");
             }else{
-                let mailOptions = {
-                    from: "deepblock.developer@gmail.com",
+                const mailOptions = {
+                    from: admin_email,
                     to: req.body.email,
                     subject: "deepblock - 아이디 찾기 결과",
                     text: `${user.dataValues.username}`
                 };
-                smtpTransport.sendMail(mailOptions, (err, info) => {
-                    if(err){
-                        res_handler.resFail500(res, "이메일 전송 실패");
-                    }else{
-                        res_handler.resSuccess200(res, "이메일 전송 성공");
+                smtpTransport.sendMail(mailOptions, (e)=>{
+                    if(!e){
+                        smtpTransport.close(); 
                     }
-                    smtpTransport.close();
-                });
+                })
+                transaction.commit();
+                res_handler.resSuccess200(res, "아이디 찾기 성공 - 이메일을 확인해주세요");
             }
-        })
-        .catch((err) => {
-            res_handler.resFail401(res, "등록되지 않은 사용자 입니다");
-        })
+        }catch(err){
+            transaction.rollback();
+            res_handler.resFail500(res, "처리 실패");
+        }
     },
 
-    findPassword(req, res){
-        models.User.findOne({
-            where : {
-                username : req.body.username,
-                email : req.body.email
-            }
-        })
-        .then((user) => {
+    async findPassword(req, res){
+        let transaction;
+
+        try{
+            transaction = await models.sequelize.transaction();
+
+            let user = await models.User.findOne({where : {username : req.body.username, email : req.body.email}});
+
             if(!user){
                 res_handler.resFail401(res, "등록되지 않은 사용자 입니다");
             }else{
                 const original_key = crypto.randomBytes(256).toString('hex');
-                const key_start = original_key.substr(100, 16);
-                const key_end = original_key.substr(50, 16);
-                const hash_key = key_start + key_end;
+                const hash_key = original_key.substr(100, 16) + original_key.substr(50, 16);
 
-                models.User.update({
+                await models.User.update({
                     password: crypto.createHash(hash).update(hash_key + salt).digest("hex")},{
-                    where: {
-                        username : user.dataValues.username, 
-                        email : user.dataValues.email
+                        where: {username : user.dataValues.username, email : user.dataValues.email}
+                },{
+                    transaction
+                });
+                const mailOptions = {
+                    from: admin_email,
+                    to: req.body.email,
+                    subject: "deepblock - 임시 비밀번호",
+                    text: `${hash_key}`
+                };
+                smtpTransport.sendMail(mailOptions, (e, info)=>{
+                    if(!e){
+                        smtpTransport.close(); 
                     }
                 })
-                .then(() => {
-                    let mailOptions = {
-                        from: "deepblock.developer@gmail.com",
-                        to: req.body.email,
-                        subject: "deepblock - 임시 비밀번호", 
-                        text: `${hash_key}`
-                    };
-                    smtpTransport.sendMail(mailOptions, (err, info) => {
-                        if(err){
-                            res_handler. resFail500(res, "이메일 전송 실패");
-                        }else{
-                            res_handler.resSuccess200(res, "이메일 전송 성공");
-                        }
-                        smtpTransport.close();
-                    });
-                })
-                .catch((err) => {
-                     res_handler. resFail401(res, "등록되지 않은 사용자 입니다");
-                }) 
+                transaction.commit();
+                res_handler.resSuccess200(res, "비밀 번호 찾기 성공 - 이메일을 확인해주세요");
             }
-        })
-        .catch((err) => {
-            res_handler. resFail401(res, "등록되지 않은 사용자입니다");
-        })
+        }catch(err){
+            transaction.rollback();
+            res_handler.resFail500(res, "처리 실패");
+        }
     },
     viewUserProfile(req, res){
 
@@ -248,31 +241,29 @@ module.exports = {
     changeAvatar(req, res){
 
     },
-
+      
     changePassword(req, res){
         const before_password = req.body.before_password;
         const after_password = req.body.after_password;
         const before_hash_password = crypto.createHash(hash).update(before_password + salt).digest("hex");
         const after_hash_password = crypto.createHash(hash).update(after_password + salt).digest("hex");
         const after_password_verify = req.body.after_password_verify;
-    
+        
         if(after_password !== after_password_verify){
             res_handler.resFail401(res, "비밀번호가 잘못되었습니다");
         }else{
             models.User.update({
-                password : after_hash_password},{
-                    where : {
-                        userID : req.session.userID,
-                        password : before_hash_password
-                    }   
-                })
-                .then((user) => {
-                    res_handler.resSuccess200(res, "비밀번호 변경 완료");
-                })
-                .catch((err) => {
-                    res_handler. resFail401(res, "비밀번호가 잘못되었습니다");
-                })
-            }          
+                password : after_hash_password
+            },{
+                where : {userID : req.session.userID, password : before_hash_password}   
+            })
+            .then((user) => {
+                res_handler.resSuccess200(res, "비밀번호 변경 완료");
+            })
+            .catch((err) => {
+                res_handler. resFail401(res, "비밀번호가 잘못되었습니다");
+            })
+        }          
     },
     verifyEmail(req, res){
         models.User.update({isVerify: true}, {where: {verifyKey: req.query.key}})
