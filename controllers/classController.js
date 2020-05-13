@@ -10,25 +10,25 @@ const salt = require('../config/configs').salt;
 const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
 const dataset_dir_name = require('../config/configs').datasets;
-const res_handler = require('../utils/responseHandler');
+const responseHandler = require('../utils/responseHandler');
 
 module.exports = {
-    async loadClassOfDataset(req, res){        
-        try{
-            const dataset_info = await models.Dataset.findAll({
-                include : [{
-                    model : models.Class
-                }], 
-                where : {
-                    userIDser_id : req.session.userid, 
-                    id : req.params.dataset_id
-                }
-            });
-
+    loadClassOfDataset(req, res){        
+        models.Dataset.findAll({
+            include : [{
+                model : models.Class
+            }], 
+            where : {
+                userID : req.session.userID, 
+                id : req.params.dataset_id
+            }
+        })
+        .then((dataset_info => {
             if(!dataset_info.length){
-                res_handler.resCustom(res, 200, {
+                responseHandler.custom(res, 200, {
                     "result" : "success",
                     "class_num" : 0,
+                    "class_list" : {}
                 });
             }else{
                 let classes = dataset_info[0].dataValues.Classes;
@@ -41,57 +41,56 @@ module.exports = {
                         image_num : _class.image_num
                     });
                 }
-
-                res_handler.resCustom(res, 200, {
+                responseHandler.custom(res, 200, {
                     "result" : "success",
                     "class_num" : class_arr.length,
                     "class_list" : class_arr
                 });
             }
-        }catch(err){
-            res_handler.syncResFail500(res, "처리 실패");
-        }
+        }))
+        .catch(()=>{
+            responseHandler.fail(res, 500,"처리 실패");
+        })
     },
 
     async createClass(req, res){
-        let class_path;
-        let transaction;
+        let class_path = null;
+        let transaction = null;
 
         try{
             transaction = await models.sequelize.transaction();
             const data_class = await models.Dataset.findOne({
                 include : [{
                     model : models.Class,
-                    where : {class_name : req.body.class_name}
+                    where : {className : req.body.class_name}
                 }],
                 where : {
-                    userIDser_id : req.session.userid,
+                    userID : req.session.userID,
                 }
             });
 
             if(data_class){
                 transaction.rollback();
-                res_handler.resFail400(res, "중복된 클래스명");
+                responseHandler.fail(res, 409, "중복된 이름입니다");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.userid}});
+                const user = await models.User.findOne({where : {id : req.session.userID}});
                 const dataset = await models.Dataset.findOne({where : {id : req.params.dataset_id}});
                 const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
-                class_path = `${base_path}/${hashId}/${dataset_dir_name}/${dataset.dataValues.dataset_name}/${req.body.class_name}`;
+                class_path = `${base_path}/${hashId}/${dataset_dir_name}/${dataset.dataValues.datasetName}/${req.body.class_name}`;
     
                 await models.Class.create({
-                        datasetIDataset_id : req.params.dataset_id,
-                        class_name : req.body.class_name,
-                        image_num : 0,
-                        class_path : class_path
+                        datasetID : req.params.dataset_id,
+                        className : req.body.class_name,
+                        imageCount : 0,
+                        classPath : class_path
                 }, { 
                     transaction 
                 });
-                await fsp.mkdir(class_path);
+                fsp.mkdir(class_path);
                 await transaction.commit();
-                await res_handler.syncResSuccess201(res, "class 생성 성공");
+                responseHandler.success(res, 200, "생성 성공");
             }
         }catch(err){
-            console.log(err);
             if(class_path){
                 fs.access(class_path, fs.constants.F_OK, ((e)=>{
                     if(!e){
@@ -100,13 +99,13 @@ module.exports = {
                 }));
             }
             transaction.rollback();
-            res_handler.syncResFail500(res, "처리 실패");
+            responseHandler.fail(res, 500, "처리 실패");
         }
     },
 
     async deleteClass(req, res){
-        let user_class_path; 
-        let transaction;
+        let user_class_path = null; 
+        let transaction = null;
 
         try{
             transaction = await models.sequelize.transaction();
@@ -122,39 +121,38 @@ module.exports = {
 
             if(!dataset_class){
                 transaction.rollback();
-                res_handler.resFail400(res, "잘못 된 요청");
+                responseHandler.fail(res, 400, "잘못 된 접근입니다");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.userid}});
+                const user = await models.User.findOne({where : {id : req.session.userID}});
                 const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
-                const dataset_name = dataset_class.dataValues.dataset_name;
-                const class_name = dataset_class.dataValues.Classes[0].dataValues.class_name;
+                const dataset_name = dataset_class.dataValues.datasetName;
+                const class_name = dataset_class.dataValues.Classes[0].dataValues.className;
                 user_class_path = `${base_path}/${hashId}/${dataset_dir_name}/${dataset_name}/${class_name}`;
 
                 await models.Class.destroy({
                     where : {
-                        datasetIDataset_id : req.params.dataset_id,
+                        datasetID : req.params.dataset_id,
                         id : req.params.class_id,
-                        class_name : class_name,
-                        class_path : user_class_path
+                        className : class_name,
+                        classPath : user_class_path
                     }
                 }, { 
                     transaction 
                 });
-
-                rimraf.sync(user_class_path);
+                rimraf(user_class_path, ((err) => {}));
                 await transaction.commit();
-                await res_handler.syncResSuccess201(res, "class 삭제 성공");
+                responseHandler.success(res, 200, "삭제 성공");
             }
         }catch(err){
             transaction.rollback();
-            res_handler.syncResFail500(res, "처리 실패");
+            responseHandler.fail(res, 500, "처리 실패");
         }
     },
 
     async updateClassName(req, res){
-        let before_class_path;
-        let after_class_path;
-        let transaction;
+        let before_class_path = null;
+        let after_class_path = null;
+        let transaction = null;
 
         try{
             transaction = await models.sequelize.transaction();
@@ -171,7 +169,7 @@ module.exports = {
             const after_class = await models.Dataset.findOne({
                 include : [{
                     model : models.Class, 
-                    where: {class_name : req.body.after}
+                    where: {className : req.body.after}
                 }], 
                 where : {
                     id : req.params.dataset_id
@@ -180,35 +178,35 @@ module.exports = {
 
             if(!before_class){
                 transaction.rollback();
-                res_handler.resFail400(res, "잘못 된 요청");
+                responseHandler.fail(res, 400,"잘못 된 접근입니다");
             }else if(after_class){
                 transaction.rollback();
-                res_handler.resFail400(res, "중복된 클래스명");
+                responseHandler.fail(res, 409,"중복된 이름입니다");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.userid}});
+                const user = await models.User.findOne({where : {id : req.session.userID}});
                 const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
-                const before_class_name = before_class.dataValues.Classes[0].dataValues.class_name;;
+                const before_class_name = before_class.dataValues.Classes[0].dataValues.className;;
                 const after_class_name = req.body.after;
 
-                before_class_path = `${base_path}/${hashId}/${dataset_dir_name}/${before_class.dataValues.dataset_name}/${before_class_name}`;
-                after_class_path = `${base_path}/${hashId}/${dataset_dir_name}/${before_class.dataValues.dataset_name}/${after_class_name}`;
+                before_class_path = `${base_path}/${hashId}/${dataset_dir_name}/${before_class.dataValues.datasetName}/${before_class_name}`;
+                after_class_path = `${base_path}/${hashId}/${dataset_dir_name}/${before_class.dataValues.datasetName}/${after_class_name}`;
 
                 await models.Class.update({
-                    class_name : after_class_name,
-                    class_path : after_class_path
+                    className : after_class_name,
+                    classPath : after_class_path
                 },{
                     where : {
-                        datasetIDataset_id : req.params.dataset_id,
+                        datasetID : req.params.dataset_id,
                         id : req.params.class_id,
-                        class_name : before_class_name,
-                        class_path : before_class_path
+                        className : before_class_name,
+                        classPath : before_class_path
                     }
                 }, { 
                     transaction 
                 });
-                await fsp.rename(before_class_path, after_class_path);
+                fsp.rename(before_class_path, after_class_path);
                 await transaction.commit();
-                await res_handler.syncResSuccess201(res, "class 이름 변경성공");
+                responseHandler.success(res, 200,"이름변경 성공");
             }
         }catch(err){
             if(after_class_path){
@@ -219,7 +217,7 @@ module.exports = {
                 }));
             }
             transaction.rollback();
-            res_handler.syncResFail500(res, "처리 실패");
+            responseHandler.fail(res, 500,"처리 실패");
         }
     }
 }
