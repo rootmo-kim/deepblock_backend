@@ -1,10 +1,8 @@
-'use strict'; 
-
+//'use strict'; 
 const crypto = require("crypto");
 const fs = require('fs');
 const fsp = require('fs').promises;
 const rimraf = require('rimraf');
-const path = require('path');
 const nodemailer = require('nodemailer');
 const smtpTransporter = require('nodemailer-smtp-transport');
 
@@ -18,20 +16,12 @@ const admin_email = require('../config/configs').admin_email;
 const admin_password = require('../config/configs').admin_password;
 const admin_email_service = require('../config/configs').admin_email_service;
 const server_ip = require('../config/configs').server_ip;
-const res_handler = require('../utils/responseHandler');
-
-smtpTransport = nodemailer.createTransport(smtpTransporter({
-    service: admin_email_service,
-    auth: {
-        user: admin_email,
-        pass: admin_password
-    }
-}));
+const responseHandler = require('../utils/responseHandler');
 
 module.exports = {
     async register(req, res){
-        let user_path;
-        let transaction;
+        let user_path = "";
+        let transaction = "";
 
         try{
             transaction = await models.sequelize.transaction();
@@ -41,11 +31,11 @@ module.exports = {
             user_check.push(await models.User.findOne({where : {email : req.body.email}}));
 
             if(user_check[0] && user_check[1]){
-                res_handler.resFail401(res, "중복된 아이디 이메일 입니다");
+                responseHandler.fail(res, 409,"중복된 아이디 이메일 입니다");
             }else if(user_check[0]){
-                res_handler.resFail401(res, "중복된 아이디 입니다");
+                responseHandler.fail(res, 409,"중복된 아이디 입니다");
             }else if(user_check[1]){
-                res_handler.resFail401(res, "중복된 이메일 입니다");
+                responseHandler.fail(res, 409,"중복된 이메일 입니다");
             }else{
                 const hashId = crypto.createHash(hash).update(req.body.username + salt).digest("hex");
                 const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
@@ -67,7 +57,14 @@ module.exports = {
                 fsp.mkdir(`${user_path}/${project_dir_name}`);
                 fsp.mkdir(`${user_path}/${data_dir_name}`);
 
-                const url = "<a href='http://" + `${server_ip}` + "/verifyEmail?key=" + `${hash_key}`+ "'>verify</a>"        
+                const url = "<a href='http://" + `${server_ip}` + "/verifyEmail?key=" + `${hash_key}`+ "'>verify</a>"
+                smtpTransport = nodemailer.createTransport(smtpTransporter({
+                    service: admin_email_service,
+                    auth: {
+                        user: admin_email,
+                        pass: admin_password
+                    }
+                }));                        
                 const mailOptions = {
                     from: admin_email,
                     to: req.body.email,
@@ -80,7 +77,7 @@ module.exports = {
                     }
                 })
                 transaction.commit();
-                res_handler.resSuccess200(res, "회원가입 성공 이메일 인증을 해주세요");
+                responseHandler.success(res, 200,"회원가입 성공 이메일 인증을 해주세요");
             }
         }catch(err){
             if(user_path){
@@ -91,7 +88,7 @@ module.exports = {
                 }));
             }
             transaction.rollback();
-            res_handler.resFail500(res, "처리 실패");
+            responseHandler.fail(res, 500,"처리 실패");
         }
     },
 
@@ -99,7 +96,7 @@ module.exports = {
         const hashId = crypto.createHash(hash).update(req.body.username + salt).digest("hex");
         const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
 
-        let transaction;
+        let transaction = "";
 
         try{
             transaction = await models.sequelize.transaction();
@@ -108,10 +105,11 @@ module.exports = {
 
             if(!user){
                 transaction.rollback();
-                res_handler.resFail401(res, "비밀번호 오류");
+                responseHandler.fail(res, 409,"비밀번호 오류");
             }else{
                 await models.User.destroy({
                     where : {
+                        id : req.session.userID,
                         username : req.session.username,
                         password : hash_password
                     }
@@ -120,11 +118,11 @@ module.exports = {
                 });
                 rimraf.sync(`${base_path}/${hashId}`);
                 transaction.commit();
-                res_handler.resSuccess200(res, "회원탈퇴 성공");
+                responseHandler.success(res, 200,"회원탈퇴 성공");
             }
         }catch(err){
             transaction.rollback();
-            res_handler.resFail500(res, "처리 실패");
+            responseHandler.fail(res, 500,"처리 실패");
         }
     },
 
@@ -139,33 +137,33 @@ module.exports = {
         })
         .then((user) => {
             if(!user){
-                res_handler.resFail401(res, "아이디 비밀번호 오류");
+                responseHandler.fail(res, 409,"아이디 비밀번호 오류");
             }else if(user.dataValues.isVerify === false){
-                res_handler.resFail403(res, "이메일 인증필요");
+                responseHandler.fail(res, 403,"이메일 인증필요");
             }else{
-                req.session.userID = user.dataValues.userID;
+                req.session.userID = user.dataValues.id;
                 req.session.username = user.dataValues.username;
-                res_handler.resSuccess200(res, "로그인 성공");
+                responseHandler.success(res, 200,"로그인 성공");
             }       
         })
         .catch((err) =>{
-            res_handler.resFail500(res, "처리 실패");
+            responseHandler.fail(res, 500,"처리 실패");
         });
     },
 
     logout(req, res){
         req.session.destroy((err) => {
             if(err){
-                res_handler.resFail401(res, "로그아웃 실패");
+                responseHandler.fail(res, 409,"로그아웃 실패");
             }else{
                 res.clearCookie('sid');
-                res_handler.resSuccess200(res, "로그아웃 성공");
+                responseHandler.success(res, 200,"로그아웃 성공");
             }
         });
     },
 
     async findID(req, res){
-        let transaction;
+        let transaction = "";
         
         try{
             transaction = await models.sequelize.transaction();
@@ -173,8 +171,15 @@ module.exports = {
             let user = await models.User.findOne({where : {email : req.body.email}});
 
             if(!user){
-                res_handler.resFail401(res, "등록되지 않은 사용자 입니다");
+                responseHandler.fail(res, 409,"등록되지 않은 사용자 입니다");
             }else{
+                smtpTransport = nodemailer.createTransport(smtpTransporter({
+                    service: admin_email_service,
+                    auth: {
+                        user: admin_email,
+                        pass: admin_password
+                    }
+                }));       
                 const mailOptions = {
                     from: admin_email,
                     to: req.body.email,
@@ -187,16 +192,16 @@ module.exports = {
                     }
                 })
                 transaction.commit();
-                res_handler.resSuccess200(res, "아이디 찾기 성공 - 이메일을 확인해주세요");
+                responseHandler.success(res, 200,"아이디 찾기 성공 - 이메일을 확인해주세요");
             }
         }catch(err){
             transaction.rollback();
-            res_handler.resFail500(res, "처리 실패");
+            responseHandler.fail(res, 500,"처리 실패");
         }
     },
 
     async findPassword(req, res){
-        let transaction;
+        let transaction = "";
 
         try{
             transaction = await models.sequelize.transaction();
@@ -204,7 +209,7 @@ module.exports = {
             let user = await models.User.findOne({where : {username : req.body.username, email : req.body.email}});
 
             if(!user){
-                res_handler.resFail401(res, "등록되지 않은 사용자 입니다");
+                responseHandler.fail(res, 401,"등록되지 않은 사용자 입니다");
             }else{
                 const original_key = crypto.randomBytes(256).toString('hex');
                 const hash_key = original_key.substr(100, 16) + original_key.substr(50, 16);
@@ -215,6 +220,13 @@ module.exports = {
                 },{
                     transaction
                 });
+                smtpTransport = nodemailer.createTransport(smtpTransporter({
+                    service: admin_email_service,
+                    auth: {
+                        user: admin_email,
+                        pass: admin_password
+                    }
+                }));       
                 const mailOptions = {
                     from: admin_email,
                     to: req.body.email,
@@ -227,11 +239,11 @@ module.exports = {
                     }
                 })
                 transaction.commit();
-                res_handler.resSuccess200(res, "비밀 번호 찾기 성공 - 이메일을 확인해주세요");
+                responseHandler.success(res, 200,"비밀 번호 찾기 성공 - 이메일을 확인해주세요");
             }
         }catch(err){
             transaction.rollback();
-            res_handler.resFail500(res, "처리 실패");
+            responseHandler.fail(res, 500,"처리 실패");
         }
     },
     viewUserProfile(req, res){
@@ -250,18 +262,19 @@ module.exports = {
         const after_password_verify = req.body.after_password_verify;
         
         if(after_password !== after_password_verify){
-            res_handler.resFail401(res, "비밀번호가 잘못되었습니다");
+            responseHandler.fail(res, 409,"비밀번호가 잘못되었습니다");
         }else{
             models.User.update({
                 password : after_hash_password
             },{
-                where : {userID : req.session.userID, password : before_hash_password}   
+                where : {id : req.session.userID, password : before_hash_password}   
             })
             .then((user) => {
-                res_handler.resSuccess200(res, "비밀번호 변경 완료");
+                responseHandler.success(res, 200,"비밀번호 변경 완료");
             })
             .catch((err) => {
-                res_handler. resFail401(res, "비밀번호가 잘못되었습니다");
+                console.log(err);
+                responseHandler. fail(res, 500,"처리 실패");
             })
         }          
     },
@@ -269,13 +282,13 @@ module.exports = {
         models.User.update({isVerify: true}, {where: {verifyKey: req.query.key}})
         .then((user) => {
             if(!user[0]){
-                res_handler.resFail401(res, "인증키 오류");
+                responseHandler.fail(res, 409,"인증키 오류");
             }else{
-                res_handler.resSuccess200(res, "인증 성공 - 로그인 가능!");
+                responseHandler.success(res, 200,"인증 성공 - 로그인 가능!");
             }
         })
         .catch((err) => { 
-            res_handler.resFail401(res, "인증키 오류");
+            responseHandler.fail(res, 500,"처리 실패");
         })
     },
 };
