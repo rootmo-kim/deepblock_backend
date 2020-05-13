@@ -22,11 +22,11 @@ let imageController = require('./controllers/imageController');
 let authenticator = require('./middlewares/authenticator');
 let sanitizer = require('./middlewares/sanitizer');
 
-//config and utils
+//configs
 const base_path = require('./config/configs').base_path;
-const project_dir_name = require('./config/configs').projects;
-const data_dir_name = require('./config/configs').datasets;
-const res_handler = require('./utils/responseHandler');
+
+//utils
+const responseHandler = require('./utils/responseHandler');
 const customStroage = require('./utils/customStorage');
 
 // Init Express
@@ -147,7 +147,7 @@ app.delete('/u/dataset/:dataset_id/class/:class_id/image', authenticator, saniti
     404 not found error handler
 */
 app.use(function(req, res, next) {
-  res_handler.resFail404(res, '404 Not found TT'); 
+  responseHandler.fail(res, 404, '404 Not found TT');
 });
 
 // Listen

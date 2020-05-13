@@ -3,20 +3,33 @@ let tf      = require("@tensorflow/tfjs-node");
 let path    = require("path");
 
 let data_loader   = require("../utils/imageLoader");
+const models = require("../models");
 const salt = require('../config/configs').salt;
 const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
 const project_dir_name = require('../config/configs').projects;
 const data_dir_name = require('../config/configs').datasets;
-const res_handler = require('../utils/responseHandler');
+const json_name = require('../config/configs').deep_model_json;
+const responseHandler = require('../utils/responseHandler');
 
 //삭제 예정 //TODO : DB에서 json 경로 질의
 let proj    = require("../public/json/model_info.json");
 
 
 module.exports = {
-    loadModelOfProject(req, res){
-        console.log('loadProject');
+    async loadModelOfProject(req, res){
+        let transaction = null;
+        try{
+            transaction = await models.sequelize.transaction();
+            const user = await models.User.findOne({where : {id : req.session.userid}});
+            const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
+            const json_path = `${base_path}/${hashId}/${project_dir_name}/${json_name}`;
+            const proj_json = require(json_path);
+
+            responseHandler.success(res, 200, proj_json);
+        }catch{
+            responseHandler.fail(res, 500,"처리 실패");
+        }
     },
 
     // Run 5 per second when user see board-page
