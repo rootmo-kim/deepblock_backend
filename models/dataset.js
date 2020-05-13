@@ -5,6 +5,10 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       type: DataTypes.STRING
     },
+    datasetPath: {
+      allowNull: false,
+      type: DataTypes.STRING
+    }
   }, {});
   Dataset.associate = function(models) {
     models.Dataset.hasMany(models.Class,{

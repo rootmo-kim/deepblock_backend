@@ -30,7 +30,9 @@ module.exports = {
                 let dataset_arr = [];
                 for(var _dataset of dataset_info){
                     _dataset = _dataset.dataValues;
-                    dataset_arr.push({ dataset_id : _dataset.id,  dataset_name : _dataset.dataset_name });
+                    dataset_arr.push({ 
+                        dataset_id : _dataset.id,  
+                        dataset_name : _dataset.datasetName });
                 }
                 responseHandlerdler.custom(res, 200, {
                     "result" : "success",
@@ -39,7 +41,8 @@ module.exports = {
                 });
             }
         })
-        .catch(()=>{
+        .catch((err)=>{
+            console.log(err);
             responseHandlerdler.fail(res, 500, "처리 실패");
         })
     },
@@ -113,7 +116,7 @@ module.exports = {
                 responseHandlerdler.fail(res, 400, "잘못 된 접근입니다");
             }else{
                 const hashId = crypto.createHash(hash).update(user_dataset.dataValues.username + salt).digest("hex");
-                const dataset_name = user_dataset.dataValues.Datasets[0].dataValues.dataset_name;
+                const dataset_name = user_dataset.dataValues.Datasets[0].dataValues.datasetName;
                 user_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${dataset_name}`;
 
                 await models.Dataset.destroy({
@@ -172,7 +175,7 @@ module.exports = {
                 responseHandlerdler.fail(res, 409,"중복된 이름입니다");
             }else{
                 const hashId = crypto.createHash(hash).update(before_dataset.dataValues.username + salt).digest("hex");
-                const before_dataset_name = before_dataset.dataValues.Datasets[0].dataValues.dataset_name;;
+                const before_dataset_name = before_dataset.dataValues.Datasets[0].dataValues.datasetName;;
                 const after_dataset_name = req.body.after;
 
                 before_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${before_dataset_name}`;

@@ -19,8 +19,8 @@ module.exports = {
                 userID : req.session.userID, 
             }
         })
-        then((projects_info)=> {
-            if(!projects_info.length){
+        .then((project_list)=> {
+            if(!project_list.length){
                 responseHandler.custom(res, 200, {
                     "result" : "success",
                     "project_num" : 0,
@@ -28,9 +28,12 @@ module.exports = {
                 });
             }else{
                 let proj_arr = [];
-                for(var _project of projects_info){
+                for(var _project of project_list){
                     _project = _project.dataValues;
-                    proj_arr.push({ project_id : _project.id,  project_name : _project.project_name});
+                    proj_arr.push({ 
+                        project_id : _project.id,  
+                        project_name : _project.projectName
+                    });
                 }
                 responseHandler.custom(res, 200, {
                     "result" : "success",
@@ -113,7 +116,7 @@ module.exports = {
                 responseHandler.fail(res, 400, "잘못 된 접근입니다");
             }else{
                 const hashId = crypto.createHash(hash).update(user_proj.dataValues.username + salt).digest("hex");
-                const project_name = user_proj.dataValues.Projects[0].dataValues.project_name;
+                const project_name = user_proj.dataValues.Projects[0].dataValues.projectName;
                 user_project_path = `${base_path}/${hashId}/${project_dir_name}/${project_name}`;
 
                 await models.Project.destroy({
@@ -172,7 +175,7 @@ module.exports = {
                 responseHandler.fail(res, 409,"중복된 이름입니다");
             }else{
                 const hashId = crypto.createHash(hash).update(before_project.dataValues.username + salt).digest("hex");
-                const before_project_name = before_project.dataValues.Projects[0].dataValues.project_name;;
+                const before_project_name = before_project.dataValues.Projects[0].dataValues.projectName;;
                 const after_project_name = req.body.after;
 
                 before_project_path = `${base_path}/${hashId}/${project_dir_name}/${before_project_name}`;

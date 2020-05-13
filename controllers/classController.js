@@ -24,20 +24,20 @@ module.exports = {
             }
         })
         .then((dataset_info => {
-            if(!dataset_info.length){
+            let class_list = dataset_info[0].dataValues.Classes;
+            if(!class_list.length){
                 responseHandler.custom(res, 200, {
                     "result" : "success",
                     "class_num" : 0,
                     "class_list" : {}
                 });
             }else{
-                let classes = dataset_info[0].dataValues.Classes;
                 let class_arr = [];
-                for(var _class of classes){
+                for(var _class of class_list){
                     _class = _class.dataValues;
                     class_arr.push({
                         class_id : _class.id, 
-                        class_name : _class.class_name, 
+                        class_name : _class.className, 
                         image_num : _class.image_num
                     });
                 }
@@ -48,7 +48,8 @@ module.exports = {
                 });
             }
         }))
-        .catch(()=>{
+        .catch((err)=>{
+            console.log(err);
             responseHandler.fail(res, 500,"처리 실패");
         })
     },
