@@ -1,6 +1,9 @@
-let fs      = require('fs');
-let tf      = require("@tensorflow/tfjs-node");
-let path    = require("path");
+'use strict';
+
+const crypto = require("crypto");
+const fs = require('fs');
+const fsp = require('fs').promises;
+const rimraf = require('rimraf');
 
 let data_loader   = require("../utils/imageLoader");
 const models = require("../models");
@@ -17,24 +20,66 @@ let proj    = require("../public/json/model_info.json");
 
 
 module.exports = {
-    async loadModelOfProject(req, res){
-        let transaction = null;
-        try{
-            transaction = await models.sequelize.transaction();
-            const user = await models.User.findOne({where : {id : req.session.userid}});
-            const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
-            const json_path = `${base_path}/${hashId}/${project_dir_name}/${json_name}`;
-            const proj_json = require(json_path);
+    loadModelOfProject(req, res){
+        models.User.findOne({
+            include : [{
+                model : models.Project,
+                where : {
+                    id : req.params.project_id
+                }
+            }],
+            where : {
+                id : req.session.userID
+            }
+        })
+        .then((user_project) => {
+            if(!user_project){
+                responseHandler.fail(res, 400 , "잘못 된 접근입니다")
+            }else{
+                const project_path = user_project.dataValues.Projects[0].projectPath;
+                const json_path = `${project_path}/${json_name}`;
+                const proj_json = JSON.parse(fs.readFileSync(json_path).toString());
 
-            responseHandler.success(res, 200, proj_json);
-        }catch{
+                responseHandler.custom(res, 200, proj_json);
+           }
+        })
+        .catch(()=>{
             responseHandler.fail(res, 500,"처리 실패");
-        }
+        })
     },
 
     // Run 5 per second when user see board-page
     updateModel(req, res){
-        
+        models.User.findOne({
+            include : [{
+                model : models.Project,
+                where : {
+                    id : req.params.project_id
+                }
+            }],
+            where : {
+                id : req.session.userID
+            }
+        })
+        .then((user_project) => {
+            if(!user_project){
+                responseHandler.fail(res, 400 , "잘못 된 접근입니다")
+            }else{
+                const project_path = user_project.dataValues.Projects[0].projectPath;
+                const json_path = `${project_path}/${json_name}`;
+                const model_json = JSON.stringify(req.body);
+                fs.open(json_path, 'w', (function(err, file_id){
+                    if(err) throw err;
+                    
+                    fs.writeSync(file_id, model_json, 0, model_json.length, null);
+                    fs.closeSync(file_id);
+                })); 
+                responseHandler.success(res, 200, "저장 성공");
+            }
+        })
+        .catch((err)=>{
+            responseHandler.fail(res, 500,"처리 실패");
+        })
     },
 
     trainResult(req, res){
