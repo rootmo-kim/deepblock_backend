@@ -119,13 +119,13 @@ app.delete('/u/projects/:project_id', authenticator, sanitizer, projectControlle
 app.put('/u/projects/:project_id', authenticator, sanitizer, projectController.updateProjectName);
 
 //modelControllers
-app.get('/u/projects/:project_id', authenticator, sanitizer, modelController.loadModelOfProject);
-app.put('/u/projects/:project_id', authenticator, sanitizer, modelController.updateModel);
+app.get('/u/projects/:project_id/model', authenticator, sanitizer, modelController.loadModelOfProject);
+app.put('/u/projects/:project_id/model', authenticator, sanitizer, modelController.updateModel);
 //modelControllers - model train/test
-app.get('/u/projects/:project_id/train', authenticator, sanitizer, modelController.trainResult);
-app.get('/u/projects/:project_id/test', authenticator, sanitizer, modelController.testResult);
-app.post('/u/projects/:project_id/train', authenticator, sanitizer, modelController.trainModel);
-app.post('/u/projects/:project_id/test', authenticator, sanitizer, modelController.testModel);
+app.get('/u/projects/:project_id/model/train', authenticator, sanitizer, modelController.trainResult);
+app.get('/u/projects/:project_id/model/test', authenticator, sanitizer, modelController.testResult);
+app.post('/u/projects/:project_id/model/train', authenticator, sanitizer, modelController.trainModel);
+app.post('/u/projects/:project_id/model/test', authenticator, sanitizer, modelController.testModel);
 
 //dataControllers
 app.get('/u/dataset', authenticator, sanitizer, datasetController.viewDatasetList);
