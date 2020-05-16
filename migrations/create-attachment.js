@@ -25,7 +25,12 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       }
-    });
+    },
+    {
+      charset: 'utfmb4',
+      collate: 'utf8mb4_general_ci'
+    }
+    );
   },
   down: (queryInterface, Sequelize) => {
     return queryInterface.dropTable('Attachments');

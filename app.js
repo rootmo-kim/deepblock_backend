@@ -8,6 +8,7 @@ let bodyParser = require('body-parser');
 let sequelize = require('./models').sequelize;
 let multer = require("multer");
 let path = require('path');
+let fs = require('fs');
 let {check, validationResult} = require('express-validator');
 
 // controllers
@@ -84,8 +85,46 @@ const upload = multer({
 
 ///////////////////////////////////test test//////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-app.post('/test/image/multer', upload.any(), ((req, res)=>{
-  console.log(req.files);
+const models = require("./models");
+app.post('/test/image/multer', upload.any(), (async function(req, res){
+  let files = req.files;
+  // let parallel_list = [];
+
+  // try{
+  //   for(var file of files){
+  //     parallel_list.push(
+  //       models.Attachment.create({
+  //         hash : file.hash,
+  //         path : file.path
+  //       })
+  //       .then((result)=>{
+  //         console.log(`${file.originalname} 성공`);
+  //       })
+  //       .catch((err)=>{
+  //         console.log(`${file.originalname} 실패`);
+  //         fs.promises.unlink(file.path);
+  //       })
+  //     ).Promise()
+  //   }
+  //   Promise.all();
+  // }catch(err){
+  //   console.log(err);
+  // }
+
+  for(var file of files){
+    if(file.path){
+      console.log(file);
+      await models.Attachment.create({
+        hash : file.hash,
+        path : file.path
+      }).then((result)=>{
+        console.log(`${file.originalname} 성공`);
+      }).catch((err)=>{
+        console.log(`${file.originalname} 실패`);
+        fs.promises.unlink(file.path);
+      })
+    }
+  }
 }));
 
 app.get('/session', (req, res)=> {
