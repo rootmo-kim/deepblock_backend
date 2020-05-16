@@ -28,66 +28,46 @@ function MyCustomStorage (opts) {
 }
 
 MyCustomStorage.prototype._handleFile = async function _handleFile (req, file, cb) {
+    let _chunk = null;
     let that = this
-    let hashed_file;
+    let hashed_file = null;
+    let attachment = null;
 
     //정상작동 코드
-    file.stream.on('data', ((chunk)=>{
-        hashed_file = crypto.createHash('sha1').update(chunk).digest('hex');
+    await file.stream.on('data', (function(chunk){
+        _chunk = chunk;
     }));
-    that.getDestination(req, file, async function (err, destination) {
-        if (err) return cb(err)
-        that.getFilename(req, file, async function (err, filename) {
+    hashed_file = crypto.createHash('sha1').update(_chunk).digest('hex');
+    attachment = await models.Attachment.findOne({where : {hash : hashed_file}});
+
+    if(attachment){
+        console.log("중복");
+        cb();
+    }else{
+        that.getDestination(req, file, function (err, destination) {
             if (err) return cb(err)
-            //let file_hash = await models.Attachment.findOne({where : {hash : hashed_file}});
 
-            var finalPath = path.join(destination, filename)
-            var outStream = fs.createWriteStream(finalPath)
+            that.getFilename(req, file, function (err, filename) {
+                if (err) return cb(err)
+                
+                var finalPath = path.join(destination, filename)
+                var outStream = fs.createWriteStream(finalPath)
 
-            await file.stream.pipe(outStream)
-            outStream.on('error', cb)
-            outStream.on('finish', function () {
-                cb(null, {
-                    destination: destination,
-                    filename: filename,
-                    path: finalPath,
-                    size: outStream.bytesWritten,
-                    hash: hashed_file
+                file.stream.pipe(outStream)
+                outStream.write(_chunk);
+                outStream.on('error', cb)
+                outStream.on('finish', function () {
+                    cb(null, {
+                        destination: destination,
+                        filename: filename,
+                        path: finalPath,
+                        size: outStream.bytesWritten,
+                        hash: hashed_file
+                    })
                 })
             })
         })
-    })
-
-    // //작동안되는 코드
-    // await file.stream.on('data', ((chunk)=>{
-    //     hashed_file = crypto.createHash('sha1').update(chunk).digest('hex');
-    // }));
-    // that.getDestination(req, file, async function (err, destination) {
-    //     if (err) return cb(err)
-    //     that.getFilename(req, file, async function (err, filename) {
-    //         if (err) return cb(err)
-    //         let file_hash = await models.Attachment.findOne({where : {hash : hashed_file}});
-
-    //         if(!file_hash){
-    //             var finalPath = path.join(destination, filename)
-    //             var outStream = fs.createWriteStream(finalPath)
-    
-    //             await file.stream.pipe(outStream)
-    //             outStream.on('error', cb)
-    //             outStream.on('finish', function () {
-    //                 cb(null, {
-    //                     destination: destination,
-    //                     filename: filename,
-    //                     path: finalPath,
-    //                     size: outStream.bytesWritten,
-    //                     hash: hashed_file
-    //                 })
-    //             })
-    //         }else{
-    //             cb();
-    //         }
-    //     })
-    // })
+    }
 }
 
 MyCustomStorage.prototype._removeFile = function _removeFile (req, file, cb) {
