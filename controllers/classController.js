@@ -49,18 +49,18 @@ module.exports = {
             }
         }))
         .catch((err)=>{
-            console.log(err);
             responseHandler.fail(res, 500,"처리 실패");
         })
     },
 
     async createClass(req, res){
-        let class_path = null;
+        let original_path = null;
+        let thumbnail_path = null;
         let transaction = null;
 
         try{
             transaction = await models.sequelize.transaction();
-            const data_class = await models.Dataset.findOne({
+            const dataset_class = await models.Dataset.findOne({
                 include : [{
                     model : models.Class,
                     where : {className : req.body.class_name}
@@ -70,32 +70,39 @@ module.exports = {
                 }
             });
 
-            if(data_class){
+            if(dataset_class){
                 transaction.rollback();
                 responseHandler.fail(res, 409, "중복된 이름입니다");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.userID}});
-                const dataset = await models.Dataset.findOne({where : {id : req.params.dataset_id}});
-                const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
-                class_path = `${base_path}/${hashId}/${dataset_dir_name}/${dataset.dataValues.datasetName}/${req.body.class_name}`;
-    
+                const dataset_info = await models.Dataset.findOne({where : {userID : req.session.userID, id : req.params.dataset_id}});
+                original_path = `${dataset_info.dataValues.datasetPath}/original/${req.body.class_name}`;
+                thumbnail_path =  `${dataset_info.dataValues.datasetPath}/thumbnail/${req.body.class_name}`;
+
                 await models.Class.create({
                         datasetID : req.params.dataset_id,
                         className : req.body.class_name,
                         imageCount : 0,
-                        classPath : class_path
+                        originalPath : original_path,
+                        thumbnailPath : thumbnail_path
                 }, { 
                     transaction 
                 });
-                fsp.mkdir(class_path);
+
+                fsp.mkdir(original_path);
+                fsp.mkdir(thumbnail_path);
                 await transaction.commit();
                 responseHandler.success(res, 200, "생성 성공");
             }
         }catch(err){
-            if(class_path){
-                fs.access(class_path, fs.constants.F_OK, ((e)=>{
+            if(original_path || thumbnail_path){
+                fs.access(original_path, fs.constants.F_OK, ((e)=>{
                     if(!e){
-                        rimraf.sync(class_path);
+                        rimraf.sync(original_path);
+                    }
+                }));
+                fs.access(thumbnail_path, fs.constants.F_OK, ((e)=>{
+                    if(!e){
+                        rimraf.sync(thumbnail_path);
                     }
                 }));
             }
@@ -105,7 +112,8 @@ module.exports = {
     },
 
     async deleteClass(req, res){
-        let user_class_path = null; 
+        let original_path = null;
+        let thumbnail_path = null;
         let transaction = null;
 
         try{
@@ -116,7 +124,8 @@ module.exports = {
                     where : {id : req.params.class_id}
                 }],
                 where : {
-                    id : req.params.dataset_id,
+                    userID : req.session.userID,
+                    id : req.params.dataset_id
                 }
             });
 
@@ -124,23 +133,21 @@ module.exports = {
                 transaction.rollback();
                 responseHandler.fail(res, 400, "잘못 된 접근입니다");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.userID}});
-                const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
-                const dataset_name = dataset_class.dataValues.datasetName;
-                const class_name = dataset_class.dataValues.Classes[0].dataValues.className;
-                user_class_path = `${base_path}/${hashId}/${dataset_dir_name}/${dataset_name}/${class_name}`;
+                original_path = dataset_class.dataValues.Classes[0].dataValues.originalPath;
+                thumbnail_path = dataset_class.dataValues.Classes[0].dataValues.thumbnailPath;
 
                 await models.Class.destroy({
                     where : {
                         datasetID : req.params.dataset_id,
                         id : req.params.class_id,
-                        className : class_name,
-                        classPath : user_class_path
+                        originalPath : original_path,
+                        thumbnailPath : thumbnail_path
                     }
                 }, { 
                     transaction 
                 });
-                rimraf(user_class_path, ((err) => {}));
+                rimraf(original_path, ((err) => {}));
+                rimraf(thumbnail_path, ((err) => {}));
                 await transaction.commit();
                 responseHandler.success(res, 200, "삭제 성공");
             }
@@ -151,8 +158,11 @@ module.exports = {
     },
 
     async updateClassName(req, res){
-        let before_class_path = null;
-        let after_class_path = null;
+        let before_original_path = null;
+        let before_thumbnail_path = null;
+        let after_original_path = null;
+        let after_thumbnail_path = null;
+
         let transaction = null;
 
         try{
@@ -184,36 +194,44 @@ module.exports = {
                 transaction.rollback();
                 responseHandler.fail(res, 409,"중복된 이름입니다");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.userID}});
-                const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
-                const before_class_name = before_class.dataValues.Classes[0].dataValues.className;;
-                const after_class_name = req.body.after;
+                before_original_path = before_class.dataValues.Classes[0].dataValues.originalPath;
+                before_thumbnail_path = before_class.dataValues.Classes[0].dataValues.thumbnailPath;
 
-                before_class_path = `${base_path}/${hashId}/${dataset_dir_name}/${before_class.dataValues.datasetName}/${before_class_name}`;
-                after_class_path = `${base_path}/${hashId}/${dataset_dir_name}/${before_class.dataValues.datasetName}/${after_class_name}`;
+                const after_class_name = req.body.after;
+                after_original_path = `${before_class.dataValues.datasetPath}/original/${after_class_name}`;
+                after_thumbnail_path = `${before_class.dataValues.datasetPath}/thumbnail/${after_class_name}`;
 
                 await models.Class.update({
                     className : after_class_name,
-                    classPath : after_class_path
+                    originalPath : after_original_path,
+                    thumbnailPath : after_thumbnail_path
                 },{
                     where : {
                         datasetID : req.params.dataset_id,
                         id : req.params.class_id,
-                        className : before_class_name,
-                        classPath : before_class_path
+                        originalPath : before_original_path,
+                        thumbnailPath : before_thumbnail_path
                     }
                 }, { 
                     transaction 
                 });
-                fsp.rename(before_class_path, after_class_path);
+
+                fsp.rename(before_original_path, after_original_path);
+                fsp.rename(before_thumbnail_path, after_thumbnail_path);
                 await transaction.commit();
                 responseHandler.success(res, 200,"이름변경 성공");
             }
         }catch(err){
-            if(after_class_path){
-                fs.access(after_class_path, fs.constants.F_OK, ((e)=>{
+            console.log(err)
+            if(after_original_path || after_thumbnail_path){
+                fs.access(after_original_path, fs.constants.F_OK, ((e)=>{
                     if(!e){
-                        fsp.rename(after_class_path, before_class_path);
+                        fsp.rename(after_original_path, before_original_path);
+                    }
+                }));
+                fs.access(after_thumbnail_path, fs.constants.F_OK, ((e)=>{
+                    if(!e){
+                        fsp.rename(after_thumbnail_path, before_thumbnail_path);
                     }
                 }));
             }

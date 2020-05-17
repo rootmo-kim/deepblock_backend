@@ -34,6 +34,7 @@ module.exports = {
                         dataset_id : _dataset.id,  
                         dataset_name : _dataset.datasetName });
                 }
+
                 responseHandlerdler.custom(res, 200, {
                     "result" : "success",
                     "dataset_num" : dataset_arr.length,
@@ -42,7 +43,6 @@ module.exports = {
             }
         })
         .catch((err)=>{
-            console.log(err);
             responseHandlerdler.fail(res, 500, "처리 실패");
         })
     },
@@ -53,13 +53,10 @@ module.exports = {
 
         try{
             transaction = await models.sequelize.transaction();
-            const user_dataset = await models.User.findOne({
-                include : [{
-                    model : models.Dataset,
-                    where : {datasetName : req.body.dataset_name}
-                }],
+            const user_dataset = await models.Dataset.findOne({
                 where : {
-                    id : req.session.userID,
+                    userID : req.session.userID,
+                    datasetName : req.body.dataset_name
                 }
             });
 
@@ -67,8 +64,7 @@ module.exports = {
                 transaction.rollback();
                 responseHandlerdler.fail(res, 409,"중복된 이름입니다");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.userID}});
-                const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
+                const hashId = crypto.createHash(hash).update(req.session.username + salt).digest("hex");
                 user_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${req.body.dataset_name}`;
     
                 await models.Dataset.create({
@@ -78,11 +74,16 @@ module.exports = {
                 }, { 
                     transaction 
                 });
-                fsp.mkdir(user_dataset_path);
+
+                fs.mkdir(user_dataset_path, (err)=>{
+                    fsp.mkdir(`${user_dataset_path}/original`);
+                    fsp.mkdir(`${user_dataset_path}/thumbnail`);
+                });
                 await transaction.commit();
                 responseHandlerdler.success(res, 200,"생성 성공");
             }
         }catch(err){
+            console.log(err);
             if(user_dataset_path){
                 fs.access(user_dataset_path, fs.constants.F_OK, ((e)=>{
                     if(!e){
@@ -101,13 +102,10 @@ module.exports = {
 
         try{
             transaction = await models.sequelize.transaction();
-            const user_dataset = await models.User.findOne({
-                include : [{
-                    model : models.Dataset,
-                    where : {id : req.params.dataset_id}
-                }],
+            const user_dataset = await models.Dataset.findOne({
                 where : {
-                    id : req.session.userID,
+                    userID : req.session.userID,
+                    id : req.params.dataset_id
                 }
             });
 
@@ -115,22 +113,19 @@ module.exports = {
                 transaction.rollback();
                 responseHandlerdler.fail(res, 400, "잘못 된 접근입니다");
             }else{
-                const hashId = crypto.createHash(hash).update(user_dataset.dataValues.username + salt).digest("hex");
-                const dataset_name = user_dataset.dataValues.Datasets[0].dataValues.datasetName;
-                user_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${dataset_name}`;
+                user_dataset_path = user_dataset.dataValues.datasetPath;
 
                 await models.Dataset.destroy({
                     where : {
                         userID : req.session.userID,
                         id : req.params.dataset_id,
-                        datasetName : dataset_name,
                         datasetPath : user_dataset_path
                     }
                 }, { 
                     transaction 
                 });
 
-                rimraf(user_dataset_path, ((err) => {}));
+                rimraf.sync(user_dataset_path);
                 await transaction.commit();
                 responseHandlerdler.success(res, 200, "삭제 성공");
             }
@@ -148,37 +143,24 @@ module.exports = {
         try{
             transaction = await models.sequelize.transaction();
 
-            const before_dataset = await models.User.findOne({
-                include : [{
-                    model : models.Dataset, 
-                    where: {id : req.params.dataset_id}
-                }], 
+            const before_dataset = await models.Dataset.findOne({
                 where : {
-                    id : req.session.userID
-                }
-            });
-            const after_dataset = await models.User.findOne({
-                include : [{
-                    model : models.Dataset, 
-                    where: {datasetName : req.body.after}
-                }], 
-                where : {
-                    id : req.session.userID
+                    userID : req.session.userID,
+                    id : req.params.dataset_id
                 }
             });
             
             if(!before_dataset){
                 transaction.rollback();
                 responseHandlerdler.fail(res, 400, "잘못 된 접근입니다");
-            }else if(after_dataset){
+            }else if(await models.Dataset.findOne({ where : { userID : req.session.userID, datasetName : req.body.after }})) {
                 transaction.rollback();
                 responseHandlerdler.fail(res, 409,"중복된 이름입니다");
             }else{
-                const hashId = crypto.createHash(hash).update(before_dataset.dataValues.username + salt).digest("hex");
-                const before_dataset_name = before_dataset.dataValues.Datasets[0].dataValues.datasetName;;
+                const hashId = crypto.createHash(hash).update(req.session.username + salt).digest("hex");
                 const after_dataset_name = req.body.after;
 
-                before_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${before_dataset_name}`;
+                before_dataset_path = before_dataset.dataValues.datasetPath;
                 after_dataset_path = `${base_path}/${hashId}/${dataset_dir_name}/${after_dataset_name}`;
 
                 await models.Dataset.update({
@@ -188,12 +170,11 @@ module.exports = {
                     where : {
                         userID : req.session.userID,
                         id : req.params.dataset_id,
-                        datasetName : before_dataset_name,
-                        datasetPath : before_dataset_path
                     }
                 }, { 
                     transaction 
                 });
+
                 fsp.rename(before_dataset_path, after_dataset_path);
                 await transaction.commit();
                 responseHandlerdler.success(res, 200, "이름변경 성공");
