@@ -35,6 +35,7 @@ module.exports = {
                         project_name : _project.projectName
                     });
                 }
+
                 responseHandler.custom(res, 200, {
                     "result" : "success",
                     "project_num" : proj_arr.length,
@@ -53,22 +54,18 @@ module.exports = {
 
         try{
             transaction = await models.sequelize.transaction();
-            const user_proj = await models.User.findOne({
-                include : [{
-                    model : models.Project,
-                    where : {projectName : req.body.project_name}
-                }],
+            const user_project = await models.Project.findOne({
                 where : {
-                    id : req.session.userID,
+                    userID : req.session.userID,
+                    projectName : req.body.project_name
                 }
             });
 
-            if(user_proj){
+            if(user_project){
                 transaction.rollback();
                 responseHandler.fail(res, 409, "중복된 이름입니다");
             }else{
-                const user = await models.User.findOne({where : {id : req.session.userID}});
-                const hashId = crypto.createHash(hash).update(user.dataValues.username + salt).digest("hex");
+                const hashId = crypto.createHash(hash).update(req.session.username + salt).digest("hex");
                 user_project_path = `${base_path}/${hashId}/${project_dir_name}/${req.body.project_name}`;
     
                 await models.Project.create({
@@ -78,6 +75,7 @@ module.exports = {
                 }, { 
                     transaction 
                 });
+
                 fsp.mkdir(user_project_path);
                 await transaction.commit();
                 responseHandler.success(res, 200, "생성 성공");
@@ -101,35 +99,30 @@ module.exports = {
 
         try{
             transaction = await models.sequelize.transaction();
-            const user_proj = await models.User.findOne({
-                include : [{
-                    model : models.Project,
-                    where : {id : req.params.project_id}
-                }],
+            const user_project = await models.Project.findOne({
                 where : {
-                    id : req.session.userID,
+                    userID : req.session.userID,
+                    id : req.params.project_id
                 }
             });
 
-            if(!user_proj){
+            if(!user_project){
                 transaction.rollback();
                 responseHandler.fail(res, 400, "잘못 된 접근입니다");
             }else{
-                const hashId = crypto.createHash(hash).update(user_proj.dataValues.username + salt).digest("hex");
-                const project_name = user_proj.dataValues.Projects[0].dataValues.projectName;
-                user_project_path = `${base_path}/${hashId}/${project_dir_name}/${project_name}`;
+                user_project_path = user_project.dataValues.projectPath;
 
                 await models.Project.destroy({
                     where : {
                         userID : req.session.userID,
                         id : req.params.project_id,
-                        projectName : project_name,
                         projectPath : user_project_path
                     }
                 }, { 
                     transaction 
                 });
-                rimraf(user_project_path, ((err) => {}));
+
+                rimraf.sync(user_project_path);
                 await transaction.commit();
                 responseHandler.success(res, 200, "삭제 성공");
             }
@@ -141,44 +134,30 @@ module.exports = {
 
 
     async updateProjectName(req, res){
-        let before_project_path;
-        let after_project_path;
-        let transaction;
+        let before_project_path = null;
+        let after_project_path = null;
+        let transaction = null;
 
         try{
             transaction = await models.sequelize.transaction();
-
-            const before_project = await models.User.findOne({
-                include : [{
-                    model : models.Project, 
-                    where: {id : req.params.project_id}
-                }], 
+            const before_project = await models.Project.findOne({
                 where : {
-                    id : req.session.userID
-                }
-            });
-            const after_project = await models.User.findOne({
-                include : [{
-                    model : models.Project, 
-                    where: {projectName : req.body.after}
-                }], 
-                where : {
-                    id : req.session.userID
+                    userID : req.session.userID,
+                    id : req.params.project_id
                 }
             });
 
             if(!before_project){
                 transaction.rollback();
                 responseHandler.fail(res, 400, "잘못 된 접근입니다");
-            }else if(after_project){
-                transaction.rollback();
+            }else if(await models.Project.findOne({ where : { userID : req.session.userID, projectName : req.body.after }})) {
+                transaction.rollback(); 
                 responseHandler.fail(res, 409,"중복된 이름입니다");
             }else{
-                const hashId = crypto.createHash(hash).update(before_project.dataValues.username + salt).digest("hex");
-                const before_project_name = before_project.dataValues.Projects[0].dataValues.projectName;;
+                const hashId = crypto.createHash(hash).update(req.session.username + salt).digest("hex");
                 const after_project_name = req.body.after;
 
-                before_project_path = `${base_path}/${hashId}/${project_dir_name}/${before_project_name}`;
+                before_project_path = before_project.dataValues.projectPath;
                 after_project_path = `${base_path}/${hashId}/${project_dir_name}/${after_project_name}`;
 
                 await models.Project.update({
@@ -188,12 +167,11 @@ module.exports = {
                     where : {
                         userID : req.session.userID,
                         id : req.params.project_id,
-                        projectName : before_project_name,
-                        projectPath : before_project_path
                     }
                 }, { 
                     transaction 
                 });
+
                 fsp.rename(before_project_path, after_project_path);
                 await transaction.commit();
                 responseHandler.success(res, 200, "이름변경 성공");

@@ -1,13 +1,13 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  const Attach = sequelize.define('Attach', {
-    originalName: {
+  const Original = sequelize.define('Original', {
+    originaPath: {
       allowNull: false,
       type: DataTypes.STRING
     }
   }, {});
-  Attach.associate = function(models) {
+  Original.associate = function(models) {
     // associations can be defined here
   };
-  return Attach;
+  return Original;
 };

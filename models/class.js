@@ -9,13 +9,21 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       type: DataTypes.STRING
     },
-    classPath: {
+    originalPath: {
+      allowNull: false,
+      type: DataTypes.STRING
+    },
+    thumbnailPath: {
       allowNull: false,
       type: DataTypes.STRING
     }
   }, {});
   Class.associate = function(models){
-    models.Class.hasMany(models.Attach,{
+    models.Class.hasMany(models.Original,{
+      foreignKey: 'classID',
+      onDelete: 'cascade',
+    })
+    models.Class.hasMany(models.Thumbnail,{
       foreignKey: 'classID',
       onDelete: 'cascade',
     })
