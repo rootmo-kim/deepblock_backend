@@ -42,7 +42,6 @@ build/Release
 # Dependency directories
 node_modules/
 jspm_packages/
-config/
 
 # TypeScript v1 declaration files
 typings/
@@ -118,6 +117,7 @@ dist
 
 #database
 config/configs.js
+config/config.json
 migration/
 
 #for test

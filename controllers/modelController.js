@@ -41,7 +41,7 @@ module.exports = {
                 const proj_json = JSON.parse(fs.readFileSync(json_path).toString());
 
                 responseHandler.custom(res, 200, proj_json);
-           }
+            }
         })
         .catch(()=>{
             responseHandler.fail(res, 500,"처리 실패");
