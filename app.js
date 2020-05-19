@@ -145,7 +145,9 @@ app.put('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, clas
 
 app.get('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, imageController.sendClassImage);
 app.post('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, navigator, imageUpload.any(), imageController.uploadImage);
-app.delete('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, imageController.deleteImage);
+app.delete('/u/dataset/:dataset_id/class/:class_id/image/:image_id', authenticator, sanitizer, imageController.deleteImage);
+
+app.get('/u/dataset/:dataset_id/class/:class_id/image/:image_id', authenticator, sanitizer, imageController.sendOrigianlImage);
 
 /*
     404 not found error handler
