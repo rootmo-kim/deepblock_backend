@@ -10,6 +10,7 @@ let multer = require("multer");
 let path = require('path');
 let fs = require('fs');
 let {check, validationResult} = require('express-validator');
+const crypto = require("crypto");
 
 // controllers
 let userController = require('./controllers/userController');
@@ -22,6 +23,7 @@ let imageController = require('./controllers/imageController');
 // middlewares
 let authenticator = require('./middlewares/authenticator');
 let sanitizer = require('./middlewares/sanitizer');
+let profilenavigator = require('./middlewares/profileNavigator');
 
 //configs
 const base_path = require('./config/configs').base_path;
@@ -83,54 +85,40 @@ const upload = multer({
   storage : custom_storage
 });
 
-///////////////////////////////////test test//////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-const models = require("./models");
-app.post('/test/image/multer', upload.any(), (async function(req, res){
-  let files = req.files;
-  // let parallel_list = [];
 
-  // try{
-  //   for(var file of files){
-  //     parallel_list.push(
-  //       models.Attachment.create({
-  //         hash : file.hash,
-  //         path : file.path
-  //       })
-  //       .then((result)=>{
-  //         console.log(`${file.originalname} 성공`);
-  //       })
-  //       .catch((err)=>{
-  //         console.log(`${file.originalname} 실패`);
-  //         fs.promises.unlink(file.path);
-  //       })
-  //     ).Promise()
-  //   }
-  //   Promise.all();
-  // }catch(err){
-  //   console.log(err);
-  // }
+// Init multer (userprofile)
+let profile_storage = multer.diskStorage({
+  destination : (req, file, cb) => {
+    let path = req.user_path;  
+    cb(null, path);
+  },
+  filename : (req, file, cb) => {
+    let filename = `${new Date().valueOf()}_` + req.profile_name;
+    let mimetype;
 
-  for(var file of files){
-    if(file.path){
-      console.log(file);
-      await models.Attachment.create({
-        hash : file.hash,
-        path : file.path
-      }).then((result)=>{
-        console.log(`${file.originalname} 성공`);
-      }).catch((err)=>{
-        console.log(`${file.originalname} 실패`);
-        fs.promises.unlink(file.path);
-      })
+    switch(file.img_type){
+      case "image/jpeg":
+        mimetype = ".jpg";
+      break;
+      case "image/png":
+        mimetype = ".png";
+      break;
+      case "image/gif":
+        mimetype = ".gif";
+      break;
+      case "image/bmp":
+        mimetype = ".bmp";
+      break;
+      default:
+        mimetype = ".jpg";
+      break;
     }
+    cb(null, filename + mimetype);
   }
-}));
-
-app.get('/session', (req, res)=> {
-    res.status(200).json({session : req.session});
 })
-////////////////////////////////////////////////////////////////////////////////
+const avatar_upload = multer({
+  storage : profile_storage
+})
 
 /*
   Request API
@@ -146,9 +134,9 @@ app.delete('/logout', authenticator, sanitizer, userController.logout);
 app.delete('/u/unregister', authenticator, sanitizer, userController.unregister);
 app.post('/findid', sanitizer, userController.findID);
 app.put('/findpasswd', sanitizer, userController.findPassword);
-app.get ('/u',authenticator, sanitizer, userController.viewUserProfile);
+app.get ('/u', authenticator, sanitizer, userController.viewUserProfile);
 app.put('/u/passwd', authenticator, sanitizer, userController.changePassword);
-app.put('/u/avatar', authenticator, sanitizer, userController.changeAvatar);
+app.put('/u/avatar', profilenavigator, avatar_upload.single('avatar'), authenticator, sanitizer, userController.changeAvatar);
 app.get('/verifyemail', sanitizer, userController.verifyEmail);
 
 //projectControllers
@@ -190,7 +178,7 @@ app.use(function(req, res, next) {
 });
 
 // Listen
-app.listen(process.env.PORT || 8000, function () {
+app.listen(process.env.PORT || 8000, function (req, res) {
   console.log('listening on port 8000');
 });
 

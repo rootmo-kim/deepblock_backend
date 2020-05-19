@@ -12,6 +12,7 @@ const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
 const project_dir_name = require('../config/configs').projects;
 const data_dir_name = require('../config/configs').datasets;
+const profile_dir_name = require('../config/configs').profiles;
 const admin_email = require('../config/configs').admin_email;
 const admin_password = require('../config/configs').admin_password;
 const admin_email_service = require('../config/configs').admin_email_service;
@@ -20,6 +21,7 @@ const responseHandler = require('../utils/responseHandler');
 
 module.exports = {
     async register(req, res){
+        //TODO 이메일 인증코드 재전송, 이메일 오는 시간이 조금 느림
         let user_path = "";
         let transaction = "";
 
@@ -30,9 +32,7 @@ module.exports = {
             user_check.push(await models.User.findOne({where : {username : req.body.username}}));
             user_check.push(await models.User.findOne({where : {email : req.body.email}}));
 
-            if(user_check[0] && user_check[1]){
-                responseHandler.fail(res, 409,"중복된 아이디 이메일 입니다");
-            }else if(user_check[0]){
+            if(user_check[0]){
                 responseHandler.fail(res, 409,"중복된 아이디 입니다");
             }else if(user_check[1]){
                 responseHandler.fail(res, 409,"중복된 이메일 입니다");
@@ -41,21 +41,22 @@ module.exports = {
                 const hash_password = crypto.createHash(hash).update(req.body.password + salt).digest("hex");
                 const original_key = crypto.randomBytes(256).toString('hex');
                 const hash_key = original_key.substr(100, 16)+original_key.substr(50, 16);
+                user_path = `${base_path}/${hashId}`;
 
                 await models.User.create({
                     username: req.body.username,
                     email: req.body.email,
                     password: hash_password,
+                    profile: null,
                     verifyKey: hash_key
                 }, {
                     transaction
                 });
 
-                user_path = `${base_path}/${hashId}`;
-
                 fs.mkdirSync(user_path);
                 fsp.mkdir(`${user_path}/${project_dir_name}`);
                 fsp.mkdir(`${user_path}/${data_dir_name}`);
+                fsp.mkdir(`${user_path}/${profile_dir_name}`);
 
                 const url = "<a href='http://" + `${server_ip}` + "/verifyEmail?key=" + `${hash_key}`+ "'>verify</a>"
                 smtpTransport = nodemailer.createTransport(smtpTransporter({
@@ -87,6 +88,7 @@ module.exports = {
                     }
                 }));
             }
+            console.log(err);
             transaction.rollback();
             responseHandler.fail(res, 500,"처리 실패");
         }
@@ -159,12 +161,12 @@ module.exports = {
                 res.clearCookie('sid');
                 responseHandler.success(res, 200,"로그아웃 성공");
             }
-        });
+        }); 
     },
 
     async findID(req, res){
+        //TODO 이메일 재전송
         let transaction = "";
-        
         try{
             transaction = await models.sequelize.transaction();
 
@@ -201,6 +203,7 @@ module.exports = {
     },
 
     async findPassword(req, res){
+        //TODO 이메일 재전송
         let transaction = "";
 
         try{
@@ -246,12 +249,56 @@ module.exports = {
             responseHandler.fail(res, 500,"처리 실패");
         }
     },
+    
     viewUserProfile(req, res){
-
+        //TODO 프론트로 이미지 보내는 api와 유저정보 보내는 api 두개 만들기
+        models.User.findOne({
+            where : {
+                username : req.session.username,
+            }
+        })
+        .then((user_info) => {
+            if(!user_info){
+                responseHandler.fail(res, 401, "등록되지 않은 사용자입니다")
+            }else{
+                responseHandler.custom(res, 200, {
+                    "username" : user_info.username,
+                    "email" : user_info.email
+                })
+            }
+        })
+        .catch(() => {
+            responseHandler.fail(res, 500, "처리 실패");
+        })
     },
 
-    changeAvatar(req, res){
+    async changeAvatar(req, res){
+        let transaction = "";
 
+        try{
+            transaction = await models.sequelize.transaction();
+            let user_info = await models.User.findOne({
+                where : {
+                    id : req.session.userID
+                }
+            })
+            let before_profile_path = user_info.dataValues.profile;
+            let after_profile_path = req.file.path;
+            await models.User.update({
+                profile : after_profile_path},{
+                where : {username : req.session.username}
+            },{
+                transaction
+            });
+            if(before_profile_path){
+                fsp.unlink(before_profile_path);
+            }
+            transaction.commit();
+            responseHandler.success(res, 200,"프로필 이미지 업로드 성공");
+        }catch(err){
+            transaction.rollback();
+            responseHandler.fail(res, 500,"처리 실패");
+        }
     },
       
     changePassword(req, res){
