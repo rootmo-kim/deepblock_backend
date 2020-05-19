@@ -37,7 +37,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "start": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js"
   },
   "author": "Jinsung",
   "license": "ISC"
