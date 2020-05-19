@@ -7,10 +7,7 @@ let express = require('express');
 let bodyParser = require('body-parser');
 let sequelize = require('./models').sequelize;
 let multer = require("multer");
-let path = require('path');
-let fs = require('fs');
-let {check, validationResult} = require('express-validator');
-const crypto = require("crypto");
+let { check, validationResult } = require('express-validator');
 
 // controllers
 let userController = require('./controllers/userController');
@@ -24,9 +21,7 @@ let imageController = require('./controllers/imageController');
 let authenticator = require('./middlewares/authenticator');
 let sanitizer = require('./middlewares/sanitizer');
 let profilenavigator = require('./middlewares/profileNavigator');
-
-//configs
-const base_path = require('./config/configs').base_path;
+let navigator = require('./middlewares/imageNavigator');
 
 //utils
 const responseHandler = require('./utils/responseHandler');
@@ -40,23 +35,23 @@ let redis_client = redis.createClient(6379, 'localhost');
 
 // Cours setting
 app.use(cors({
-  origin : true,
-  credentials : true
+  origin: true,
+  credentials: true
 }))
 
 // Init session
 const sess = {
-    key: 'sid',
-    resave: false,
-    secret: 'secret',
-    saveUninitialized: true,
-    store: new redis_store({
-        client: redis_client
-    }),
-    cookie: {
-      httpOnly : true,
-      maxAge: 24000 * 60 * 60
-    }
+  key: 'sid',
+  resave: false,
+  secret: 'secret',
+  saveUninitialized: true,
+  store: new redis_store({
+    client: redis_client
+  }),
+  cookie: {
+    httpOnly: true,
+    maxAge: 24000 * 60 * 60
+  }
 };
 app.use(session(sess));
 
@@ -68,23 +63,31 @@ sequelize.sync().then(() => {
   console.log(" DB 연결 성공")
 });
 
+// // Init multer
+// let custom_storage = customStroage({
+//   destination: function (req, file, cb) {
+//     //let path = `${base_path}/${req.query.id}/${req.query.name}/${file.fieldname}/`;
+//     let path = `${base_path}/attachments/`;
+//     cb(null, path);
+//   },
+//   filename: function (req, file, cb) {
+//     //let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`;
+//     let filename = `${new Date().valueOf()}_${file.originalname}`;
+//     cb(null, filename); 
+//   }
+// })
+
 // Init multer
-let custom_storage = customStroage({
+let storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    //let path = `${base_path}/${req.query.id}/${req.query.name}/${file.fieldname}/`;
-    let path = `${base_path}/attachments/`;
+    let path = `${req.original_path}/`;
     cb(null, path);
   },
   filename: function (req, file, cb) {
-    //let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`;
     let filename = `${new Date().valueOf()}_${file.originalname}`;
-    cb(null, filename); 
+    cb(null, filename);
   }
 })
-const upload = multer({
-  storage : custom_storage
-});
-
 
 // Init multer (userprofile)
 let profile_storage = multer.diskStorage({
@@ -120,21 +123,24 @@ const avatar_upload = multer({
   storage : profile_storage
 })
 
+const imageUpload = multer({
+  storage: storage
+});
+
 /*
   Request API
 */
 app.get('/', function (req, res, next) {
   res.status(200).send('DeepBlock : GUI based deep learning service');
 });
-
 //userControllers
 app.post('/register', sanitizer, userController.register);
-app.post('/login' , sanitizer, userController.login);
+app.post('/login', sanitizer, userController.login);
 app.delete('/logout', authenticator, sanitizer, userController.logout);
 app.delete('/u/unregister', authenticator, sanitizer, userController.unregister);
 app.post('/findid', sanitizer, userController.findID);
 app.put('/findpasswd', sanitizer, userController.findPassword);
-app.get ('/u', authenticator, sanitizer, userController.viewUserProfile);
+app.get('/u', authenticator, sanitizer, userController.viewUserProfile);
 app.put('/u/passwd', authenticator, sanitizer, userController.changePassword);
 app.put('/u/avatar', profilenavigator, avatar_upload.single('avatar'), authenticator, sanitizer, userController.changeAvatar);
 app.get('/verifyemail', sanitizer, userController.verifyEmail);
@@ -167,13 +173,15 @@ app.delete('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, c
 app.put('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, classController.updateClassName);
 
 app.get('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, imageController.sendClassImage);
-app.post('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, upload.any(), imageController.uploadImage);
-app.delete('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, imageController.deleteImage);
+app.post('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, navigator, imageUpload.any(), imageController.uploadImage);
+app.delete('/u/dataset/:dataset_id/class/:class_id/image/:image_id', authenticator, sanitizer, imageController.deleteImage);
+
+app.get('/u/dataset/:dataset_id/class/:class_id/image/:image_id', authenticator, sanitizer, imageController.sendOrigianlImage);
 
 /*
     404 not found error handler
 */
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   responseHandler.fail(res, 404, '404 Not found TT');
 });
 
