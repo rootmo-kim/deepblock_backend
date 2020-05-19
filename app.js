@@ -20,6 +20,7 @@ let imageController = require('./controllers/imageController');
 // middlewares
 let authenticator = require('./middlewares/authenticator');
 let sanitizer = require('./middlewares/sanitizer');
+let profilenavigator = require('./middlewares/profileNavigator');
 let navigator = require('./middlewares/imageNavigator');
 
 //utils
@@ -88,6 +89,40 @@ let storage = multer.diskStorage({
   }
 })
 
+// Init multer (userprofile)
+let profile_storage = multer.diskStorage({
+  destination : (req, file, cb) => {
+    let path = req.user_path;  
+    cb(null, path);
+  },
+  filename : (req, file, cb) => {
+    let filename = `${new Date().valueOf()}_` + req.profile_name;
+    let mimetype;
+
+    switch(file.img_type){
+      case "image/jpeg":
+        mimetype = ".jpg";
+      break;
+      case "image/png":
+        mimetype = ".png";
+      break;
+      case "image/gif":
+        mimetype = ".gif";
+      break;
+      case "image/bmp":
+        mimetype = ".bmp";
+      break;
+      default:
+        mimetype = ".jpg";
+      break;
+    }
+    cb(null, filename + mimetype);
+  }
+})
+const avatar_upload = multer({
+  storage : profile_storage
+})
+
 const imageUpload = multer({
   storage: storage
 });
@@ -107,7 +142,7 @@ app.post('/findid', sanitizer, userController.findID);
 app.put('/findpasswd', sanitizer, userController.findPassword);
 app.get('/u', authenticator, sanitizer, userController.viewUserProfile);
 app.put('/u/passwd', authenticator, sanitizer, userController.changePassword);
-app.put('/u/avatar', authenticator, sanitizer, userController.changeAvatar);
+app.put('/u/avatar', profilenavigator, avatar_upload.single('avatar'), authenticator, sanitizer, userController.changeAvatar);
 app.get('/verifyemail', sanitizer, userController.verifyEmail);
 
 //projectControllers
@@ -151,7 +186,7 @@ app.use(function (req, res, next) {
 });
 
 // Listen
-app.listen(process.env.PORT || 8000, function () {
+app.listen(process.env.PORT || 8000, function (req, res) {
   console.log('listening on port 8000');
 });
 
