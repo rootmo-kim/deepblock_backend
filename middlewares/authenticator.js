@@ -1,3 +1,5 @@
+'use strict'
+
 const responseHandler = require('../utils/responseHandler');
 
 const authenticator = (req, res, next) => {

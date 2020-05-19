@@ -1,4 +1,5 @@
-let url = require("url");
+'use strict'
+
 var {check, validationResult} = require('express-validator');
 
 const sanitizer = (req, res, next) => {

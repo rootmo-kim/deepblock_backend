@@ -1,16 +1,10 @@
 'use strict';
 
-const fs = require('fs');
 const fsp = require('fs').promises;
-const rimraf = require('rimraf');
 const sharp = require('sharp');
 const datauri = require('datauri');
 
 const models = require("../models");
-const salt = require('../config/configs').salt;
-const base_path = require('../config/configs').base_path;
-const hash = require('../config/configs').hash;
-const dataset_dir_name = require('../config/configs').datasets;
 const responseHandler = require('../utils/responseHandler');
 
 module.exports = {

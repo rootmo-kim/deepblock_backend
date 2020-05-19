@@ -7,9 +7,6 @@ let express = require('express');
 let bodyParser = require('body-parser');
 let sequelize = require('./models').sequelize;
 let multer = require("multer");
-let path = require('path');
-let fs = require('fs');
-let gm = require('gm');
 let { check, validationResult } = require('express-validator');
 
 // controllers
@@ -24,9 +21,6 @@ let imageController = require('./controllers/imageController');
 let authenticator = require('./middlewares/authenticator');
 let sanitizer = require('./middlewares/sanitizer');
 let navigator = require('./middlewares/imageNavigator');
-
-//configs
-const base_path = require('./config/configs').base_path;
 
 //utils
 const responseHandler = require('./utils/responseHandler');
