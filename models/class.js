@@ -19,11 +19,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {});
   Class.associate = function(models){
-    models.Class.hasMany(models.Original,{
-      foreignKey: 'classID',
-      onDelete: 'cascade',
-    })
-    models.Class.hasMany(models.Thumbnail,{
+    models.Class.hasMany(models.Image,{
       foreignKey: 'classID',
       onDelete: 'cascade',
     })

@@ -9,7 +9,8 @@ let sequelize = require('./models').sequelize;
 let multer = require("multer");
 let path = require('path');
 let fs = require('fs');
-let {check, validationResult} = require('express-validator');
+let gm = require('gm');
+let { check, validationResult } = require('express-validator');
 
 // controllers
 let userController = require('./controllers/userController');
@@ -22,6 +23,7 @@ let imageController = require('./controllers/imageController');
 // middlewares
 let authenticator = require('./middlewares/authenticator');
 let sanitizer = require('./middlewares/sanitizer');
+let navigator = require('./middlewares/imageNavigator');
 
 //configs
 const base_path = require('./config/configs').base_path;
@@ -38,23 +40,23 @@ let redis_client = redis.createClient(6379, 'localhost');
 
 // Cours setting
 app.use(cors({
-  origin : true,
-  credentials : true
+  origin: true,
+  credentials: true
 }))
 
 // Init session
 const sess = {
-    key: 'sid',
-    resave: false,
-    secret: 'secret',
-    saveUninitialized: true,
-    store: new redis_store({
-        client: redis_client
-    }),
-    cookie: {
-      httpOnly : true,
-      maxAge: 24000 * 60 * 60
-    }
+  key: 'sid',
+  resave: false,
+  secret: 'secret',
+  saveUninitialized: true,
+  store: new redis_store({
+    client: redis_client
+  }),
+  cookie: {
+    httpOnly: true,
+    maxAge: 24000 * 60 * 60
+  }
 };
 app.use(session(sess));
 
@@ -66,71 +68,35 @@ sequelize.sync().then(() => {
   console.log(" DB 연결 성공")
 });
 
+// // Init multer
+// let custom_storage = customStroage({
+//   destination: function (req, file, cb) {
+//     //let path = `${base_path}/${req.query.id}/${req.query.name}/${file.fieldname}/`;
+//     let path = `${base_path}/attachments/`;
+//     cb(null, path);
+//   },
+//   filename: function (req, file, cb) {
+//     //let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`;
+//     let filename = `${new Date().valueOf()}_${file.originalname}`;
+//     cb(null, filename); 
+//   }
+// })
+
 // Init multer
-let custom_storage = customStroage({
+let storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    //let path = `${base_path}/${req.query.id}/${req.query.name}/${file.fieldname}/`;
-    let path = `${base_path}/attachments/`;
+    let path = `${req.original_path}/`;
     cb(null, path);
   },
   filename: function (req, file, cb) {
-    //let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`;
     let filename = `${new Date().valueOf()}_${file.originalname}`;
-    cb(null, filename); 
+    cb(null, filename);
   }
 })
-const upload = multer({
-  storage : custom_storage
+
+const imageUpload = multer({
+  storage: storage
 });
-
-///////////////////////////////////test test//////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-const models = require("./models");
-app.post('/test/image/multer', upload.any(), (async function(req, res){
-  let files = req.files;
-  // let parallel_list = [];
-
-  // try{
-  //   for(var file of files){
-  //     parallel_list.push(
-  //       models.Attachment.create({
-  //         hash : file.hash,
-  //         path : file.path
-  //       })
-  //       .then((result)=>{
-  //         console.log(`${file.originalname} 성공`);
-  //       })
-  //       .catch((err)=>{
-  //         console.log(`${file.originalname} 실패`);
-  //         fs.promises.unlink(file.path);
-  //       })
-  //     ).Promise()
-  //   }
-  //   Promise.all();
-  // }catch(err){
-  //   console.log(err);
-  // }
-
-  for(var file of files){
-    if(file.path){
-      console.log(file);
-      await models.Attachment.create({
-        hash : file.hash,
-        path : file.path
-      }).then((result)=>{
-        console.log(`${file.originalname} 성공`);
-      }).catch((err)=>{
-        console.log(`${file.originalname} 실패`);
-        fs.promises.unlink(file.path);
-      })
-    }
-  }
-}));
-
-app.get('/session', (req, res)=> {
-    res.status(200).json({session : req.session});
-})
-////////////////////////////////////////////////////////////////////////////////
 
 /*
   Request API
@@ -138,15 +104,14 @@ app.get('/session', (req, res)=> {
 app.get('/', function (req, res, next) {
   res.status(200).send('DeepBlock : GUI based deep learning service');
 });
-
 //userControllers
 app.post('/register', sanitizer, userController.register);
-app.post('/login' , sanitizer, userController.login);
+app.post('/login', sanitizer, userController.login);
 app.delete('/logout', authenticator, sanitizer, userController.logout);
 app.delete('/u/unregister', authenticator, sanitizer, userController.unregister);
 app.post('/findid', sanitizer, userController.findID);
 app.put('/findpasswd', sanitizer, userController.findPassword);
-app.get ('/u',authenticator, sanitizer, userController.viewUserProfile);
+app.get('/u', authenticator, sanitizer, userController.viewUserProfile);
 app.put('/u/passwd', authenticator, sanitizer, userController.changePassword);
 app.put('/u/avatar', authenticator, sanitizer, userController.changeAvatar);
 app.get('/verifyemail', sanitizer, userController.verifyEmail);
@@ -179,13 +144,13 @@ app.delete('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, c
 app.put('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, classController.updateClassName);
 
 app.get('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, imageController.sendClassImage);
-app.post('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, upload.any(), imageController.uploadImage);
+app.post('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, navigator, imageUpload.any(), imageController.uploadImage);
 app.delete('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, imageController.deleteImage);
 
 /*
     404 not found error handler
 */
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   responseHandler.fail(res, 404, '404 Not found TT');
 });
 
