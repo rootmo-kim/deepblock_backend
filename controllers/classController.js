@@ -62,7 +62,7 @@ module.exports = {
                     where : {className : req.body.class_name}
                 }],
                 where : {
-                    userID : req.session.userID,
+                    id : req.params.dataset_id,
                 }
             });
 
