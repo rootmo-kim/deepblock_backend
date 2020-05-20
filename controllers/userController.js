@@ -5,6 +5,7 @@ const fsp = require('fs').promises;
 const rimraf = require('rimraf');
 const nodemailer = require('nodemailer');
 const smtpTransporter = require('nodemailer-smtp-transport');
+const datauri = require('datauri');
 
 const models = require("../models");
 const salt = require('../config/configs').salt;
@@ -33,8 +34,10 @@ module.exports = {
             user_check.push(await models.User.findOne({where : {email : req.body.email}}));
 
             if(user_check[0]){
+                transaction.rollback();
                 responseHandler.fail(res, 409,"중복된 아이디 입니다");
             }else if(user_check[1]){
+                transaction.rollback();
                 responseHandler.fail(res, 409,"중복된 이메일 입니다");
             }else{
                 const hashId = crypto.createHash(hash).update(req.body.username + salt).digest("hex");
@@ -88,7 +91,6 @@ module.exports = {
                     }
                 }));
             }
-            console.log(err);
             transaction.rollback();
             responseHandler.fail(res, 500,"처리 실패");
         }
@@ -173,6 +175,7 @@ module.exports = {
             let user = await models.User.findOne({where : {email : req.body.email}});
 
             if(!user){
+                transaction.rollback();
                 responseHandler.fail(res, 409,"등록되지 않은 사용자 입니다");
             }else{
                 smtpTransport = nodemailer.createTransport(smtpTransporter({
@@ -212,6 +215,7 @@ module.exports = {
             let user = await models.User.findOne({where : {username : req.body.username, email : req.body.email}});
 
             if(!user){
+                transaction.rollback();
                 responseHandler.fail(res, 401,"등록되지 않은 사용자 입니다");
             }else{
                 const original_key = crypto.randomBytes(256).toString('hex');
@@ -250,25 +254,51 @@ module.exports = {
         }
     },
     
-    viewUserProfile(req, res){
-        //TODO 프론트로 이미지 보내는 api와 유저정보 보내는 api 두개 만들기
+    viewProfile(req, res){
+        let avatar;
+
         models.User.findOne({
             where : {
-                username : req.session.username,
+                id : req.session.userID
             }
         })
         .then((user_info) => {
             if(!user_info){
-                responseHandler.fail(res, 401, "등록되지 않은 사용자입니다")
+                responseHandler.fail(res, 401, "등록되지 않은 사용자입니다");
             }else{
+                if(!user_info.avatar){
+                    avatar = "unexist";
+                }else{
+                    avatar = "exist";
+                }
                 responseHandler.custom(res, 200, {
                     "username" : user_info.username,
-                    "email" : user_info.email
+                    "email" : user_info.email,
+                    "avatar" : avatar
                 })
             }
         })
         .catch(() => {
             responseHandler.fail(res, 500, "처리 실패");
+        })
+    },
+
+    viewProfileImage(req, res){
+        models.User.findOne({
+            where : {
+                id : req.session.userID
+            }
+        })
+        .then(async function(user){
+            if(!user){
+              responseHandler.fail(res, 403, "잘못된 접근");
+            }else{
+                let image_uri = await datauri(user.dataValues.avatar);
+                res.send(image_uri);
+            }
+        })
+        .catch((err) => {
+          responseHandler.fail(res, 500, "처리 실패");
         })
     },
 
@@ -282,7 +312,7 @@ module.exports = {
                     id : req.session.userID
                 }
             })
-            let before_profile_path = user_info.dataValues.profile;
+            let before_profile_path = user_info.dataValues.avatar;
             let after_profile_path = req.file.path;
             await models.User.update({
                 profile : after_profile_path},{
