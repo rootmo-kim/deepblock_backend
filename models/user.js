@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       type: DataTypes.STRING
     },
-    profile: {
+    avatar: {
       allowNull: true,
       type: DataTypes.STRING
     },
