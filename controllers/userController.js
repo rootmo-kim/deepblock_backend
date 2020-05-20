@@ -1,4 +1,4 @@
-//'use strict'; 
+'use strict'; 
 const crypto = require("crypto");
 const fs = require('fs');
 const fsp = require('fs').promises;

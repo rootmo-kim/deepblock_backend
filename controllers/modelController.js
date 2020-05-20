@@ -1,27 +1,13 @@
 'use strict';
 
-const crypto = require("crypto");
 const fs = require('fs');
-const fsp = require('fs').promises;
-const rimraf = require('rimraf');
 const tf = require("@tensorflow/tfjs-node");
-const PImage = require('pureimage');
-const pixels = require('image-pixels');
-const getPixels = require('get-pixels');
 
 let data_loader = require("../utils/imageLoader");
 const models = require("../models");
-const salt = require('../config/configs').salt;
 const base_path = require('../config/configs').base_path;
-const hash = require('../config/configs').hash;
-const project_dir_name = require('../config/configs').projects;
-const data_dir_name = require('../config/configs').datasets;
 const json_name = require('../config/configs').deep_model_json;
 const responseHandler = require('../utils/responseHandler');
-
-//삭제 예정 //TODO : DB에서 json 경로 질의
-let proj = require("../public/json/model_info.json");
-
 
 module.exports = {
   loadModelOfProject(req, res) {
