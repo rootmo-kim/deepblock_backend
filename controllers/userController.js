@@ -1,4 +1,4 @@
-'use strict'; 
+//'use strict'; 
 const crypto = require("crypto");
 const fs = require('fs');
 const fsp = require('fs').promises;
@@ -84,6 +84,7 @@ module.exports = {
         responseHandler.success(res, 200, "회원가입 성공 이메일 인증을 해주세요");
       }
     } catch (err) {
+      console.log(err);
       if (user_path) {
         fs.access(user_path, fs.constants.F_OK, ((e) => {
           if (!e) {
