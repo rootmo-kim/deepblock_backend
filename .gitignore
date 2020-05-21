@@ -121,9 +121,6 @@ config/config.json
 migration/
 
 #for test
-./test/
-controllers/testController.js
-middlewares/sanitizerTest.js
-./test.http
-./test.http
+/tester
+/test
 /public
