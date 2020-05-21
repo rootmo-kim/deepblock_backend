@@ -121,7 +121,7 @@ config/config.json
 migration/
 
 #for test
-test/
+./test/
 controllers/testController.js
 middlewares/sanitizerTest.js
 ./test.http
