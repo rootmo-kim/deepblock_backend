@@ -8,5 +8,7 @@ module.exports = {
   'admin_email': "admin_email",
   'admin_password': "admin_pw",
   'admin_email_service': "domain ex)gmail",
-  'server_ip': "server_ip"
+  'server_ip': "server_ip",
+  'server_port' : 'port_num',
+  'profiles': "profile_dir_name"
 }
