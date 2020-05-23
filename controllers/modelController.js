@@ -72,49 +72,82 @@ module.exports = {
 
   trainResult(req, res) {
 
+    models.Project.findOne({
+      where: {
+        userID : req.session.userID,
+        id : req.params.project_id
+      }
+    })
+    .then((project) => {
+      let train_result_path = `${project.dataValues.projectPath}/result/result.json`
+      let back_path = `${project.dataValues.projectPath}/result/result_bach.json`
+
+      fs.access(`${back_path}`, fs.F_OK, (access_err)=>{
+        if(access_err){
+          fs.access(`${back_path}`, fs.F_OK, (access_err_2)=>{
+            if(access_err_2){
+              const train_result_json = JSON.parse(fs.readFileSync(train_result_path).toString());
+              responseHandler.custom(res, 200, train_result_json);
+            }else{
+              responseHandler.fail(res, 500, '재요청')
+            }
+          });
+        }else{
+          const train_result_json = JSON.parse(fs.readFileSync(back_path).toString());
+          responseHandler.custom(res, 200, train_result_json);
+        }
+      });
+    })
+    .catch((err) => {
+      responseHandler.fail(res, 500, "처리 실패");
+    })
   },
 
   testResult(req, res) {
+    let project_id = req.params.project_id;
 
+    models.Project.findOne({
+      include : [{
+        model : models.Test,
+      }],
+      where : {
+        userID : req.session.userID,
+        id : project_id
+      }
+    }).then(async function(test_results){
+      test_results = test_results.dataValues;
+      if(test_results.Tests.length === 0){
+        responseHandler.fail(res, 403, '학습결과가 없습니다.');
+      }else{
+        test_results = test_results.Tests;
+        
+        let result_list = [];
+        for(let test_result of test_results){
+          let used_dataset = await models.Dataset.findOne({
+            where :{
+              id : test_result.dataValues.datasetID
+            }
+          })
+          let dataset_name = used_dataset.dataValues.datasetName;
+          let loss = test_result.loss;
+          let accuracy = test_result.accuracy;
+          result_list.push({id : test_result.id, dataset : dataset_name, loss : loss, accuracy : accuracy}); 
+        }
+        responseHandler.success(res, 200, result_list);
+      }
+    }).catch((err)=>{
+      console.log(err);
+      responseHandler.fail(res, 500, "처리 실패");
+    })
   },
 
   async trainModel(req, res) {
-    let model = null;
+    let dataset_id = req.body.dataset_id;
+    let x_list = [];
+    let y_list = [];
+    let one_hot = 0;
+
     try {
-      let class_list = await models.Class.findAll({
-        include: [{
-          model: models.Image,
-        }],
-        where: {
-          datasetID: req.body.dataset_id
-        }
-      });
-
-      let labels = [];
-      let x_list = [];
-      let y_list = [];
-      let classes_image_cnt = [];
-      let class_num = class_list.length;
-      let one_hot = 0;
-
-      for (let _class of class_list) {
-        _class = _class.dataValues
-
-        let images = _class.Images;
-        labels.push(_class.className);
-        classes_image_cnt.push(images.length);
-
-        for (let image of images) {
-          let image_data = fs.readFileSync(image.originalPath);
-          let result = tf.node.decodeImage(image_data);
-          x_list.push(result);
-          y_list.push(tf.oneHot(one_hot, class_num))
-        }
-        one_hot++;
-      }
-
-      let x_train = tf.stack(x_list);
-      let y_train = tf.stack(y_list);
 
       let project_info = await models.Project.findOne({
         where: {
@@ -123,139 +156,232 @@ module.exports = {
         }
       })
 
-      const project_path = project_info.dataValues.projectPath;
-      const json_path = `${project_path}/${json_name}`;
-      const project_json = JSON.parse(fs.readFileSync(json_path).toString());
+      let class_list = await models.Class.findAll({
+        include: [{
+          model: models.Image,
+        }],
+        where: {
+          datasetID: dataset_id
+        }
+      });
 
-      model = await getModelFromJson(project_json);
+      if(!project_info){
+        responseHandler.fail(res, 403, "잘못 된 접근");
+      }else if(!class_list.length){
+        responseHandler.fail(res, 403, "학습데이터가 없습니다");  
+      }else{
+        const project_path = project_info.dataValues.projectPath;
+        const json_path = `${project_path}/${json_name}`;
+        const project_json = JSON.parse(fs.readFileSync(json_path).toString());
 
-      if (!model) {
-        responseHandler.fail(res, 400, '잘못 된 모델');
-      } else {
-        //model train param
-        let epoch = 10;//proj_json.models[0].fit.epochs;
-        let batchs = project_json.models[0].fit.batch_size;
-        let val_per = project_json.models[0].fit.val_data_per; //실제 서비스에선 사용예정
+        let model = getModelFromJson(project_json);
 
-        trainModel(model, x_train, y_train, epoch, batchs, ((history_list) => {
-          console.log(history_list);
+        if (typeof model === 'string') {
+          responseHandler.fail(res, 400, model);
+        } else {
 
-          let modelSavePath = `${project_path}`; //TODO : DB에서 사용자 프로젝트경로 질의
-          if (modelSavePath != null) {
-            model.save(`file://${modelSavePath}`);
+          //model train param
+          let epoch = 20;//proj_json.models[0].fit.epochs;
+          let batchs = project_json.models[0].fit.batch_size;
+          let val_per = 0//project_json.models[0].fit.val_data_per; //실제 서비스에선 사용예정
+  
+          //image load for train
+          for (let _class of class_list) {
+            _class = _class.dataValues
+          
+            let images = _class.Images;
+            for (let image of images) {
+              let image_data = fs.readFileSync(image.originalPath);
+              let result = tf.node.decodeImage(image_data);
+              x_list.push(result);
+              y_list.push(tf.oneHot(one_hot, class_list.length))
+            }
+            one_hot++;
           }
-        }));
 
-        // for(let e=0; e<epoch; e++){
-        //     let history = await model.fit(x_train, y_train, {
-        //         epochs: 1,
-        //         batchSize: batchs,
-        //         shuffle : true,
-        //         callbacks : {
-        //             //onEpochEnd = epoch 종료시 프린트
-        //             //onBatchEnd = batch 종료시 프린트
-        //             onEpochEnd: async (batch, logs) => {
-        //                 console.log(batch + ' : ' + logs.acc);
-        //                 console.log();
-        //             }
-        //         }
-        //     })
-        //     console.log(`======epoch:${e}======`);
-        //     console.log(history.history);
-        // }
+          //change image into tensor
+          let x_train = tf.stack(x_list);
+          let y_train = tf.stack(y_list);
 
+          trainModel(model, x_train, y_train, epoch, batchs, val_per, project_path,(() => {
+            let result_save_path = `${project_path}/result`;
+            model.save(`file://${result_save_path}`);
 
-        responseHandler.success(res, 200, "모델 학습 시작");
+            models.Train.findOne({
+              where : {
+                projectID : project_info.dataValues.id,
+                datasetID : dataset_id,
+                resultPath : result_save_path
+              }
+            })
+            .then((result_exist)=>{
+              if(!result_exist){
+                models.Train.create({
+                  projectID : project_info.dataValues.id,
+                  datasetID : dataset_id,
+                  resultPath : result_save_path
+                });
+              }
+            })
+
+          }));
+          responseHandler.success(res, 200, "모델 학습 시작");
+        }
       }
-    } catch (err) {
-      console.log(err);
+    } catch (err){
       responseHandler.fail(res, 500, "처리 실패");
     }
 
-    //JSON to model
-    async function getModelFromJson(proj) {
-      let model = tf.sequential();
+    //JSON to model function
+    function getModelFromJson(proj) {
+        let model = tf.sequential();
 
-      for (var _model of proj.models) {
-        try {
-          for (var _layer of _model.layers) {
-            model.add(tf.layers[_layer.type](_layer.params));
+        for (var _model of proj.models) {
+          try {
+            for (var _layer of _model.layers) {
+              model.add(tf.layers[_layer.type](_layer.params));
+            }
+            model.compile({
+              optimizer: _model.compile.optimizer,
+              loss: _model.compile.loss,
+              metrics: ['accuracy'],
+            });
+            model.summary()
+          } catch (e) {
+            return `${e}\r\nModel ID: ${_model.ID} LayerID : ${_layer.ID}`;
           }
-          model.compile({
-            optimizer: _model.compile.optimizer,
-            loss: _model.compile.loss,
-            metrics: ['accuracy'],
-          });
-          model.summary()
-        } catch (e) {
-          console.log(`${e}\r\nModel ID: ${_model.ID} LayerID : ${_layer.ID}`);
-          return false;
         }
-      }
-      return model;
+        return model;
     }
 
-    async function trainModel(model, x_train, y_train, epoch, batchs, callback) {
+    //model train function
+    async function trainModel(model, x_train, y_train, epoch, batchs, vali_per, project_path, callback) {
+      const json_path = `${project_path}/result/result.json`;
+      const json_back_path = `${project_path}/result/result_back.json`
       let history_list = [];
+
       for (let e = 0; e < epoch; e++) {
         let history = await model.fit(x_train, y_train, {
           epochs: 1,
           batchSize: batchs,
           shuffle: true,
-          //validationSplit : 0.2,
-          callbacks: {
-            //onEpochEnd = epoch 종료시 프린트
-            //onBatchEnd = batch 종료시 프린트
-            onEpochEnd: async (epoch, logs) => {
-              console.log(epoch + ' : ' + logs.acc);
-              console.log();
-              //TODO : front로 보내줄 학습 중간결과 저장루틴 추가
-            }
-          }
+          validationSplit : vali_per,
         })
-        history_list.push(history.history);
 
-        //
+        history_list.push({loss : history.history.loss[0], acc : history.history.acc[0]});
+        let result_json = {history : history_list}
+
+        fs.writeFileSync(json_path, JSON.stringify(result_json));
+        if(e == epoch - 1){
+          fs.unlinkSync(json_back_path, (()=>{/* error handling */}))
+        }else{
+          fs.copyFileSync(json_path, json_back_path);
+        }
       }
-
       callback(history_list);
     }
   },
 
   async testModel(req, res) {
-    //test model load
-    let modelPrime;
-    let saved_model_path = `${base_path}/public`; //TODO : DB에서 데이터 경로 질의
-    try {
-      modelPrime = await tf.loadLayersModel(`file://${saved_model_path}/model.json`);
-      modelPrime.compile({
-        optimizer: proj.models[0].compile.optimizer,
-        loss: proj.models[0].compile.loss,
-        metrics: ['accuracy']
+    let project_id = req.params.project_id;
+
+    try{
+      let result_exist = await models.Project.findOne({
+        include : [{
+          model : models.Train,
+          where : {
+            projectID : project_id
+          }
+        }],
+        where : {
+          userID : req.session.userID,
+        }
       });
-      modelPrime.summary();
+  
+      if(!result_exist){
+        responseHandler.fail(res, 403, '학습 결과가 없습니다.');
+      }else{
+        let project_info = result_exist.dataValues;
+        let project_path = project_info.projectPath;
+        let saved_model_path = `${project_path}/result`;
+        let save_option = req.body.save_option; //true or false
+
+        let model_json_path = `${project_path}/${json_name}`;
+        let project_json = JSON.parse(fs.readFileSync(model_json_path).toString());
+
+        let dataset_id = req.body.dataset_id;
+
+        const test_model = await tf.loadLayersModel(`file://${saved_model_path}/model.json`);
+
+        test_model.compile({
+          optimizer: project_json.models[0].compile.optimizer,
+          loss: project_json.models[0].compile.loss,
+          metrics : ['accuracy']
+        });
+        test_model.summary();
+
+        let class_list = await models.Class.findAll({
+          include: [{
+            model: models.Image,
+          }],
+          where: {
+            datasetID: dataset_id
+          }
+        });
+
+        //image load for train
+        let x_list = [];
+        let y_list = [];
+        let one_hot = 0;
+        for (let _class of class_list) {
+          _class = _class.dataValues
+        
+          let images = _class.Images;
+          for (let image of images) {
+            let image_data = fs.readFileSync(image.originalPath);
+            let result = tf.node.decodeImage(image_data);
+            x_list.push(result);
+            y_list.push(tf.oneHot(one_hot, class_list.length))
+          }
+          one_hot++;
+        }
+        //change image into tensor
+        let x_test = tf.stack(x_list);
+        let y_test = tf.stack(y_list);
+
+        const result = test_model.evaluate(x_test, y_test, {
+          batchSize : 4
+        });
+
+        let result_json = {loss : result[0].dataSync()[0], accuracy : result[1].dataSync()[0]}
+        if(save_option){
+          models.Test.create({
+            datasetID : dataset_id,
+            projectID : project_id,
+            loss : result_json.loss,
+            accuracy : result_json.accuracy
+          }).then(()=>{
+            models.Test.findAll({
+              where : {
+                projectID : project_id
+              },
+              order: [['id', 'asc']]
+            }).then((saved_results)=>{
+              if(saved_results.length > 5){
+                models.Test.destroy({
+                  where : {
+                    id : saved_results[0].dataValues.id
+                  }
+                })
+              }
+            })
+          })
+        }
+        responseHandler.success(res, 200, result_json)
+      }
+    }catch(err){
+      responseHandler.fail(res, 500, '처리 실패')
     }
-    catch (e) {
-      console.log(`Can't load model`);
-      return false;
-    }
-
-
-    //test image load
-    let path = `${base_path}/public/mnist/trainingSet/trainingSet`; //TODO : DB에서 데이터 경로 질의
-    let img_format = proj.data.info.format;
-    let img_shape = proj.data.info.shape;
-    let imgPath = await data_loader.dataInit(path, img_format, img_shape);
-    const xs = await tf.data.generator(data_loader.imageGenerator);
-    const ys = await tf.data.generator(data_loader.labelGenerator);
-    const ds = await tf.data.zip({ xs, ys }).shuffle(imgPath.length).batch(64);
-
-    //model evaluation
-    let result = await modelPrime.evaluateDataset(ds);
-
-    //print evaluation result
-    console.log(`result(loss) : ${result[0]}`);
-    console.log(`result(acc) : ${result[1]}`);
   }
 };
 
