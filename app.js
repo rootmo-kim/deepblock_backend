@@ -7,7 +7,6 @@ let express = require('express');
 let bodyParser = require('body-parser');
 let sequelize = require('./models').sequelize;
 let multer = require("multer");
-let { check, validationResult } = require('express-validator');
 
 // controllers
 let userController = require('./controllers/userController');
@@ -25,7 +24,6 @@ let navigator = require('./middlewares/imageNavigator');
 
 //utils
 const responseHandler = require('./utils/responseHandler');
-const customStroage = require('./utils/customStorage');
 
 // Init Express
 let app = express();
@@ -63,19 +61,6 @@ sequelize.sync().then(() => {
   console.log(" DB 연결 성공")
 });
 
-// // Init multer
-// let custom_storage = customStroage({
-//   destination: function (req, file, cb) {
-//     //let path = `${base_path}/${req.query.id}/${req.query.name}/${file.fieldname}/`;
-//     let path = `${base_path}/attachments/`;
-//     cb(null, path);
-//   },
-//   filename: function (req, file, cb) {
-//     //let filename = `${req.files.length-1}.${file.originalname.split('.').pop()}`;
-//     let filename = `${new Date().valueOf()}_${file.originalname}`;
-//     cb(null, filename); 
-//   }
-// })
 
 // Init multer
 let storage = multer.diskStorage({
