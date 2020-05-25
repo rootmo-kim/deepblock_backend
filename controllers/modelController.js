@@ -430,5 +430,6 @@ module.exports = {
       console.log(err);
       responseHandler.fail(res, 500, '처리 실패')
     }
-};
+  }
+}
 
