@@ -1,3 +1,5 @@
+"use strict"
+
 // modules
 let cors = require('cors');
 let redis = require('redis');
