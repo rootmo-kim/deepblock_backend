@@ -13,11 +13,12 @@ const base_path = require('../config/configs').base_path;
 const hash = require('../config/configs').hash;
 const project_dir_name = require('../config/configs').projects;
 const data_dir_name = require('../config/configs').datasets;
-const profile_dir_name = require('../config/configs').profiles;
+const profile_dir_name = require('../config/configs').profile_dir_name;
 const admin_email = require('../config/configs').admin_email;
 const admin_password = require('../config/configs').admin_password;
 const admin_email_service = require('../config/configs').admin_email_service;
 const server_ip = require('../config/configs').server_ip;
+const server_port = require('../config/configs').server_port;
 const responseHandler = require('../utils/responseHandler');
 
 module.exports = {
@@ -61,7 +62,7 @@ module.exports = {
         fsp.mkdir(`${user_path}/${data_dir_name}`);
         fsp.mkdir(`${user_path}/${profile_dir_name}`);
 
-        const url = "<a href='http://" + `${server_ip}` + "/verifyEmail?key=" + `${hash_key}` + "'>verify</a>"
+        const url = "<a href='http://" + `${server_ip}:${server_port}` + "/verifyEmail?key=" + `${hash_key}` + "'>verify</a>"
         smtpTransport = nodemailer.createTransport(smtpTransporter({
           service: admin_email_service,
           auth: {
