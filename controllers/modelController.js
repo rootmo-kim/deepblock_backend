@@ -3,9 +3,7 @@
 const fs = require('fs');
 const tf = require("@tensorflow/tfjs-node");
 
-let data_loader = require("../utils/imageLoader");
 const models = require("../models");
-const base_path = require('../config/configs').base_path;
 const json_name = require('../config/configs').deep_model_json;
 const responseHandler = require('../utils/responseHandler');
 
@@ -143,12 +141,9 @@ module.exports = {
 
   async trainModel(req, res) {
     let dataset_id = req.body.dataset_id;
-    let x_list = [];
-    let y_list = [];
-    let one_hot = 0;
+
 
     try {
-
       let project_info = await models.Project.findOne({
         where: {
           userID: req.session.userID,
@@ -178,53 +173,88 @@ module.exports = {
 
         if (typeof model === 'string') {
           responseHandler.fail(res, 400, model);
+        }else if(model.output.shape[1] !== class_list.length){
+          responseHandler.fail(res, 403, `class_num and output_num missmatched <class_num : ${class_list.length}  output_num : ${model.output.shape[1]}>`);
         } else {
-
           //model train param
-          let epoch = 20;//proj_json.models[0].fit.epochs;
+          let epoch = project_json.models[0].fit.epochs;
           let batchs = project_json.models[0].fit.batch_size;
-          let val_per = 0//project_json.models[0].fit.val_data_per; //실제 서비스에선 사용예정
-  
-          //image load for train
-          for (let _class of class_list) {
-            _class = _class.dataValues
+          let val_per = project_json.models[0].fit.val_data_per;
+          let first_layer = project_json.models[0].layers[0].type;
+
+          let x_list = [];
+          let y_list = [];
+
+          let model_input;
+          let image_load_promises = [];
+          let one_hot = 0;
           
-            let images = _class.Images;
-            for (let image of images) {
-              let image_data = fs.readFileSync(image.originalPath);
-              let result = tf.node.decodeImage(image_data);
-              x_list.push(result);
-              y_list.push(tf.oneHot(one_hot, class_list.length))
+          if(first_layer === 'dense'){
+            model_input = project_json.models[0].layers[0].params.units;
+            for (let _class of class_list) {
+              _class = _class.dataValues
+            
+              let images = _class.Images;
+              for (let image of images) {
+                image_load_promises.push(new Promise((resolve)=>{
+                  let result = tf.node.decodeImage(fs.readFileSync(image.originalPath));
+                  result = result.flatten().toFloat();
+                  x_list.push(result);
+                  y_list.push(tf.oneHot(one_hot, class_list.length));
+                  resolve();
+                }))
+              }
+              one_hot++;
             }
-            one_hot++;
+          }else{
+            model_input = project_json.models[0].layers[0].params.inputShape;
+            for (let _class of class_list) {
+              _class = _class.dataValues
+            
+              let images = _class.Images;
+              for (let image of images) {
+                image_load_promises.push(new Promise((resolve)=>{
+                  let result = tf.node.decodeImage(fs.readFileSync(image.originalPath));
+
+                  x_list.push(result.toFloat());
+                  y_list.push(tf.oneHot(one_hot, class_list.length));
+                  resolve();
+                }))
+              }
+              one_hot++;
+            }
           }
 
-          //change image into tensor
-          let x_train = tf.stack(x_list);
-          let y_train = tf.stack(y_list);
+          Promise.all(image_load_promises).then(()=>{
+            //change image into tensor
 
-          trainModel(model, x_train, y_train, epoch, batchs, val_per, project_path,(() => {
-            let result_save_path = `${project_path}/result`;
-            model.save(`file://${result_save_path}`);
+            let x_train = tf.stack(x_list);
+            let y_train = tf.stack(y_list);
 
-            models.Train.findOne({
-              where : {
-                projectID : project_info.dataValues.id,
-                datasetID : dataset_id,
-                resultPath : result_save_path
-              }
-            })
-            .then((result_exist)=>{
-              if(!result_exist){
-                models.Train.create({
+            x_train = x_train.div(tf.scalar(255.0));
+
+            trainModel(model, x_train, y_train, epoch, batchs, val_per, project_path,(() => {
+              let result_save_path = `${project_path}/result`;
+              model.save(`file://${result_save_path}`);
+
+              models.Train.findOne({
+                where : {
                   projectID : project_info.dataValues.id,
                   datasetID : dataset_id,
                   resultPath : result_save_path
-                });
-              }
-            })
-
-          }));
+                }
+              })
+              .then((result_exist)=>{
+                if(!result_exist){
+                  models.Train.create({
+                    projectID : project_info.dataValues.id,
+                    datasetID : dataset_id,
+                    resultPath : result_save_path
+                  });
+                }
+              })
+            }));
+          })
           responseHandler.success(res, 200, "모델 학습 시작");
         }
       }
@@ -305,14 +335,12 @@ module.exports = {
         let project_path = project_info.projectPath;
         let saved_model_path = `${project_path}/result`;
         let save_option = req.body.save_option; //true or false
-
         let model_json_path = `${project_path}/${json_name}`;
         let project_json = JSON.parse(fs.readFileSync(model_json_path).toString());
 
         let dataset_id = req.body.dataset_id;
 
         const test_model = await tf.loadLayersModel(`file://${saved_model_path}/model.json`);
-
         test_model.compile({
           optimizer: project_json.models[0].compile.optimizer,
           loss: project_json.models[0].compile.loss,
@@ -333,25 +361,44 @@ module.exports = {
         let x_list = [];
         let y_list = [];
         let one_hot = 0;
-        for (let _class of class_list) {
-          _class = _class.dataValues
-        
-          let images = _class.Images;
-          for (let image of images) {
-            let image_data = fs.readFileSync(image.originalPath);
-            let result = tf.node.decodeImage(image_data);
-            x_list.push(result);
-            y_list.push(tf.oneHot(one_hot, class_list.length))
+
+        if(test_model.input.name === "conv2d_Conv2D1_input"){
+          console.log('ji')
+          for (let _class of class_list) {
+            _class = _class.dataValues
+          
+            let images = _class.Images;
+            for (let image of images) {
+              let image_data = fs.readFileSync(image.originalPath);
+              let result = tf.node.decodeImage(image_data);
+              x_list.push(result.toFloat());
+              y_list.push(tf.oneHot(one_hot, class_list.length))
+            }
+            one_hot++;
           }
-          one_hot++;
+        }else{
+          for (let _class of class_list) {
+            _class = _class.dataValues
+          
+            let images = _class.Images;
+            for (let image of images) {
+              let image_data = fs.readFileSync(image.originalPath);
+              let result = tf.node.decodeImage(image_data);
+              result.flatten();
+              x_list.push(result.toFloat());
+              y_list.push(tf.oneHot(one_hot, class_list.length))
+            }
+            one_hot++;
+          }
         }
+
         //change image into tensor
         let x_test = tf.stack(x_list);
         let y_test = tf.stack(y_list);
 
-        const result = test_model.evaluate(x_test, y_test, {
-          batchSize : 4
-        });
+        x_test = x_test.div(tf.scalar(255.0));
+
+        const result = test_model.evaluate(x_test, y_test);
 
         let result_json = {loss : result[0].dataSync()[0], accuracy : result[1].dataSync()[0]}
         if(save_option){
@@ -380,8 +427,8 @@ module.exports = {
         responseHandler.success(res, 200, result_json)
       }
     }catch(err){
+      console.log(err);
       responseHandler.fail(res, 500, '처리 실패')
     }
-  }
 };
 

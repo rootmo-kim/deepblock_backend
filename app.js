@@ -19,8 +19,8 @@ let imageController = require('./controllers/imageController');
 // middlewares
 let authenticator = require('./middlewares/authenticator');
 let sanitizer = require('./middlewares/sanitizer');
-let profilenavigator = require('./middlewares/profileNavigator');
-let navigator = require('./middlewares/imageNavigator');
+let avatarNavigator = require('./middlewares/avatarNavigator');
+let imageNavigator = require('./middlewares/imageNavigator');
 
 //utils
 const responseHandler = require('./utils/responseHandler');
@@ -128,7 +128,7 @@ app.put('/findpasswd', sanitizer, userController.findPassword);
 app.get('/u', authenticator, sanitizer, userController.viewProfile);
 app.get('/u/avatar', authenticator, sanitizer, userController.viewProfileImage);
 app.put('/u/passwd', authenticator, sanitizer, userController.changePassword);
-app.put('/u/avatar', profilenavigator, avatar_upload.single('avatar'), authenticator, sanitizer, userController.changeAvatar);
+app.put('/u/avatar', avatarNavigator, avatar_upload.single('avatar'), authenticator, sanitizer, userController.changeAvatar);
 app.get('/verifyemail', sanitizer, userController.verifyEmail);
 
 //projectControllers
@@ -159,7 +159,7 @@ app.delete('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, c
 app.put('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, classController.updateClassName);
 
 app.get('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, imageController.sendClassImage);
-app.post('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, navigator, imageUpload.any(), imageController.uploadImage);
+app.post('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, imageNavigator, imageUpload.any(), imageController.uploadImage);
 app.delete('/u/dataset/:dataset_id/class/:class_id/image/:image_id', authenticator, sanitizer, imageController.deleteImage);
 
 app.get('/u/dataset/:dataset_id/class/:class_id/image/:image_id', authenticator, sanitizer, imageController.sendOrigianlImage);

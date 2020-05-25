@@ -1,3 +1,7 @@
+/*============================
+      configs.js sample
+============================*/
+
 module.exports = {
   'base_path': 'users_data_saved_path',
   'salt': 'random string',

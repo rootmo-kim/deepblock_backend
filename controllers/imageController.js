@@ -106,6 +106,28 @@ module.exports = {
   },
 
   sendOrigianlImage(req, res) {
-
+    models.Class.findOne({
+      include : [{
+        model : models.Image,
+        where : {
+          id : req.params.image_id
+        }
+      }],
+      where : {
+        datasetID : req.params.dataset_id,
+        id : req.params.class_id
+      }
+    }).then((result)=>{
+      if(result){
+        responseHandler.fail(res, 403, '잘못 된 접근');
+      }else{
+        let image_info = result.dataValues.Images[0];  
+        datauri(image_info.dataValues.thumbnailPath, ((err, image_uri)=>{
+          responseHandler.custom(res, 200, {image_uri: image_uri});
+        }));
+      }
+    }).catch((err)=>{
+      responseHandler.fail(res, 500, '처리 실패')
+    })
   }
 }
