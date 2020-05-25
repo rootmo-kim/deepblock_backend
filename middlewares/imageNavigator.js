@@ -18,14 +18,11 @@ const navigator = (req, res, next) => {
       req.original_path = exist.dataValues.Classes[0].dataValues.originalPath;
       req.thumbnail_path = exist.dataValues.Classes[0].dataValues.thumbnailPath;
 
-      console.log("navi success");
       next();
     } else {
-      console.log("navi failed");
       responseHandler.fail(res, 400, "잘못 된 접근")
     }
   }).catch((err) => {
-    console.log(err);
     responseHandler.fail(res, 500, "처리 실패");
   })
 };
