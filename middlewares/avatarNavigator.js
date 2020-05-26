@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const hash = require('../config/configs').hash;
 const salt = require('../config/configs').salt;
-const profile_dir_name = require('../config/configs').profiles;
+const profile_dir_name = require('../config/configs').profile_dir_name;
 const base_path = require('../config/configs').base_path;
 
 

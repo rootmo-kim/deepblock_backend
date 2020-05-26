@@ -51,7 +51,7 @@ module.exports = {
           username: req.body.username,
           email: req.body.email,
           password: hash_password,
-          profile: null,
+          avatar: null,
           verifyKey: hash_key
         }, {
           transaction
@@ -310,15 +310,15 @@ module.exports = {
 
     try {
       transaction = await models.sequelize.transaction();
-      let user_info = await models.User.findOne({
+      let user = await models.User.findOne({
         where: {
           id: req.session.userID
         }
       })
-      let before_profile_path = user_info.dataValues.avatar;
+      let before_profile_path = user.dataValues.avatar;
       let after_profile_path = req.file.path;
       await models.User.update({
-        profile: after_profile_path
+        avatar : after_profile_path
       }, {
         where: { username: req.session.username }
       }, {
@@ -335,29 +335,63 @@ module.exports = {
     }
   },
 
-  changePassword(req, res) {
+  async deleteAvater(req, res){
+    let transaction = "";
+
+    try {
+      transaction = await models.sequelize.transaction();
+      let user = await models.User.findOne({
+        where : {
+          id : req.session.userID
+        }
+      });
+
+      if(!user){
+        transaction.rollback();
+        responseHandler.fail(res, 400, "잘못 된 접근입니다");
+      }else{
+        let profile_path = user.dataValues.avatar;
+        if(user.dataValues.avatar){
+          fsp.unlink(profile_path);
+        }
+        await transaction.commit();
+        responseHandler.success(res, 200, "삭제 성공");
+      }
+    } catch (err) {
+      transaction.rollback();
+      responseHandler.fail(res, 500, "처리 실패");
+    }
+  },
+
+  checkPassword(req, res){
+    const password = req.body.password;
+    const password_verify = req.body.password_verify;
+
+    if(password !== password_verify){
+        responseHandler.fail(res, 409, "비밀번호가 잘못되었습니다");
+    }else{
+        responseHandler.success(res, 200, "본인 확인 완료");
+    }
+  },
+
+  changePassword(req, res){
     const before_password = req.body.before_password;
     const after_password = req.body.after_password;
     const before_hash_password = crypto.createHash(hash).update(before_password + salt).digest("hex");
     const after_hash_password = crypto.createHash(hash).update(after_password + salt).digest("hex");
-    const after_password_verify = req.body.after_password_verify;
 
-    if (after_password !== after_password_verify) {
-      responseHandler.fail(res, 409, "비밀번호가 잘못되었습니다");
-    } else {
-      models.User.update({
-        password: after_hash_password
-      }, {
-        where: { id: req.session.userID, password: before_hash_password }
-      })
-      .then((user) => {
-        responseHandler.success(res, 200, "비밀번호 변경 완료");
-      })
-      .catch((err) => {
+    models.User.update({
+        password : after_hash_password
+    },{
+        where : {id : req.session.userID, password : before_hash_password}   
+    })
+    .then((user) => {
+        responseHandler.success(res, 200,"비밀번호 변경 완료");
+    })
+    .catch((err) => {
         console.log(err);
-        responseHandler.fail(res, 500, "처리 실패");
-      })
-    }
+        responseHandler. fail(res, 500,"처리 실패");
+    })          
   },
   verifyEmail(req, res) {
     models.User.update({ isVerify: true }, { 

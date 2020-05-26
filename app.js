@@ -121,50 +121,52 @@ app.get('/', function (req, res, next) {
   res.status(200).send('DeepBlock : GUI based deep learning service');
 });
 //userControllers
-app.post('/register', sanitizer, userController.register);
-app.post('/login', sanitizer, userController.login);
-app.delete('/logout', authenticator, sanitizer, userController.logout);
-app.delete('/u/unregister', authenticator, sanitizer, userController.unregister);
-app.post('/findid', sanitizer, userController.findID);
-app.put('/findpasswd', sanitizer, userController.findPassword);
-app.get('/u', authenticator, sanitizer, userController.viewProfile);
-app.get('/u/avatar', authenticator, sanitizer, userController.viewProfileImage);
-app.put('/u/passwd', authenticator, sanitizer, userController.changePassword);
-app.put('/u/avatar', avatarNavigator, avatar_upload.single('avatar'), authenticator, sanitizer, userController.changeAvatar);
-app.get('/verifyemail', sanitizer, userController.verifyEmail);
+app.post('/register', sanitizer.register, userController.register);
+app.post('/login', sanitizer.login, userController.login);
+app.delete('/logout', authenticator, userController.logout);
+app.delete('/u/unregister', authenticator, sanitizer.unregister, userController.unregister);
+app.post('/findid', sanitizer.findID, userController.findID);
+app.put('/findpasswd', sanitizer.findPassword, userController.findPassword);
+app.get('/u', authenticator, userController.viewProfile);
+app.get('/u/avatar', authenticator, userController.viewProfileImage);
+app.put('/u/avatar', authenticator, avatarNavigator, avatar_upload.single('avatar'), userController.changeAvatar);
+app.delete('/u/deleteavatar', authenticator, userController.deleteAvater);
+app.post('/u/checkpasswd', authenticator, sanitizer.checkPassword, userController.checkPassword);
+app.put('/u/passwd', authenticator, sanitizer.changePassword, userController.changePassword);
+app.get('/verifyemail', sanitizer.verifyEmail, userController.verifyEmail);
 
-//projectControllers
-app.get('/u/projects', authenticator, sanitizer, projectController.viewProjectList);
-app.post('/u/projects', authenticator, sanitizer, projectController.createProject);
-app.delete('/u/projects/:project_id', authenticator, sanitizer, projectController.deleteProject);
-app.put('/u/projects/:project_id', authenticator, sanitizer, projectController.updateProjectName);
+// //projectControllers
+app.get('/u/projects', authenticator, projectController.viewProjectList);
+app.post('/u/projects', authenticator, sanitizer.createProject, projectController.createProject);
+app.delete('/u/projects/:project_id', authenticator, sanitizer.deleteProject, projectController.deleteProject);
+app.put('/u/projects/:project_id', authenticator, sanitizer.updateProjectName, projectController.updateProjectName);
 
 //modelControllers
-app.get('/u/projects/:project_id/model', authenticator, sanitizer, modelController.loadModelOfProject);
-app.put('/u/projects/:project_id/model', authenticator, sanitizer, modelController.updateModel);
+app.get('/u/projects/:project_id/model', authenticator, sanitizer.loadModelOfProject, modelController.loadModelOfProject);
+app.put('/u/projects/:project_id/model', authenticator, sanitizer.updateModel, modelController.updateModel);
 //modelControllers - model train/test
-app.get('/u/projects/:project_id/model/train', authenticator, sanitizer, modelController.trainResult);
-app.get('/u/projects/:project_id/model/test', authenticator, sanitizer, modelController.testResult);
-app.post('/u/projects/:project_id/model/train', authenticator, sanitizer, modelController.trainModel);
-app.post('/u/projects/:project_id/model/test', authenticator, sanitizer, modelController.testModel);
+app.get('/u/projects/:project_id/model/train', authenticator, sanitizer.trainResult, modelController.trainResult);
+app.get('/u/projects/:project_id/model/test', authenticator, sanitizer.testResult, modelController.testResult);
+app.post('/u/projects/:project_id/model/train', authenticator, sanitizer.trainModel, modelController.trainModel);
+app.post('/u/projects/:project_id/model/test', authenticator, sanitizer.testModel, modelController.testModel);
 
 //dataControllers
-app.get('/u/dataset', authenticator, sanitizer, datasetController.viewDatasetList);
-app.post('/u/dataset', authenticator, sanitizer, datasetController.createDataset);
-app.delete('/u/dataset/:dataset_id', authenticator, sanitizer, datasetController.deleteDataset);
-app.put('/u/dataset/:dataset_id', authenticator, sanitizer, datasetController.updateDatasetName);
+app.get('/u/dataset', authenticator, datasetController.viewDatasetList);
+app.post('/u/dataset', authenticator, sanitizer.createDataset, datasetController.createDataset);
+app.delete('/u/dataset/:dataset_id', authenticator, sanitizer.deleteDataset, datasetController.deleteDataset);
+app.put('/u/dataset/:dataset_id', authenticator, sanitizer.updateDatasetName, datasetController.updateDatasetName);
 
 //classController
-app.get('/u/dataset/:dataset_id/class', authenticator, sanitizer, classController.loadClassOfDataset);
-app.post('/u/dataset/:dataset_id/class', authenticator, sanitizer, classController.createClass);
-app.delete('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, classController.deleteClass);
-app.put('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, classController.updateClassName);
+app.get('/u/dataset/:dataset_id/class', authenticator, sanitizer.loadClassOfDataset, classController.loadClassOfDataset);
+app.post('/u/dataset/:dataset_id/class', authenticator, sanitizer.createCalss, classController.createClass);
+app.delete('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer.deleteClass, classController.deleteClass);
+app.put('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer.updateClassName, classController.updateClassName);
 
-app.get('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer, imageController.sendClassImage);
-app.post('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer, imageNavigator, imageUpload.any(), imageController.uploadImage);
-app.delete('/u/dataset/:dataset_id/class/:class_id/image/:image_id', authenticator, sanitizer, imageController.deleteImage);
+app.get('/u/dataset/:dataset_id/class/:class_id', authenticator, sanitizer.sendClassImage, imageController.sendClassImage);
+app.post('/u/dataset/:dataset_id/class/:class_id/image', authenticator, sanitizer.uploadImage, imageNavigator, imageUpload.any(), imageController.uploadImage);
+app.delete('/u/dataset/:dataset_id/class/:class_id/image/:image_id', authenticator, sanitizer.deleteImage, imageController.deleteImage);
 
-app.get('/u/dataset/:dataset_id/class/:class_id/image/:image_id', authenticator, sanitizer, imageController.sendOrigianlImage);
+app.get('/u/dataset/:dataset_id/class/:class_id/image/:image_id', authenticator, sanitizer.sendOriginalImage, imageController.sendOrigianlImage);
 
 /*
     404 not found error handler
